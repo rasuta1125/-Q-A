@@ -186,20 +186,69 @@ app.post('/api/generate', async (c) => {
       }
     } catch (error) {
       console.error('Vectorize search error:', error);
-      // Vectorizeエラー時はフォールバック: キーワード検索
+      // Vectorizeエラー時はフォールバック: 全件取得して簡易スコアリング
       const { results } = await DB.prepare(
         `SELECT * FROM qa_items 
          WHERE is_active = 1 
-         AND (question LIKE ? OR answer LIKE ? OR keywords LIKE ?)
-         ORDER BY priority ASC
-         LIMIT 5`
-      ).bind(`%${query}%`, `%${query}%`, `%${query}%`).all();
+         ORDER BY priority ASC, id ASC`
+      ).all();
 
-      searchResults = results.map((qa: any) => ({
-        qa_item: qa as QAItem,
-        score: 0.6,
-        source_type: 'qa' as const,
-      }));
+      // 簡易スコアリング: より単純で確実なキーワードマッチング
+      const queryLower = query.toLowerCase();
+      
+      searchResults = results
+        .map((qa: any) => {
+          const questionLower = qa.question.toLowerCase();
+          const answerLower = qa.answer.toLowerCase();
+          const keywordsLower = (qa.keywords || '').toLowerCase();
+          
+          let score = 0;
+          
+          // キーワードリストでマッチング
+          const keywords = keywordsLower.split(',').map(k => k.trim());
+          for (const keyword of keywords) {
+            if (keyword.length > 0 && queryLower.includes(keyword)) {
+              score = Math.max(score, 0.9);
+              break;
+            }
+          }
+          
+          // 質問文に部分一致
+          if (questionLower.includes(queryLower)) {
+            score = Math.max(score, 0.95);
+          } else {
+            // クエリの主要単語でマッチング（2文字以上）
+            const queryChars = Array.from(queryLower).filter(c => c.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\w]/));
+            let matchedChars = 0;
+            for (let i = 0; i < queryChars.length - 1; i++) {
+              const bigram = queryChars[i] + queryChars[i + 1];
+              if (questionLower.includes(bigram)) {
+                matchedChars += 2;
+              }
+            }
+            if (matchedChars > 2) {
+              score = Math.max(score, 0.7 + (matchedChars / queryChars.length) * 0.2);
+            }
+          }
+          
+          // 回答文に部分一致
+          if (score < 0.7 && answerLower.includes(queryLower)) {
+            score = Math.max(score, 0.75);
+          }
+          
+          // 最低スコア
+          if (score === 0) {
+            score = 0.3;
+          }
+          
+          return {
+            qa_item: qa as QAItem,
+            score: Math.min(0.95, score),
+            source_type: 'qa' as const,
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
     }
 
     // 4. 信頼度計算

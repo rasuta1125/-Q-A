@@ -109,10 +109,10 @@ export function calculateConfidence(scores: number[]): 'A' | 'B' | 'C' {
   const topScore = scores[0];
   const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 
-  // スコアリング基準
-  if (topScore > 0.85 && avgScore > 0.75) {
-    return 'A'; // 十分な根拠あり
-  } else if (topScore > 0.70 && avgScore > 0.60) {
+  // スコアリング基準（フォールバック検索を考慮して調整）
+  if (topScore >= 0.85) {
+    return 'A'; // トップスコアが高ければ十分な根拠あり
+  } else if (topScore >= 0.70 || (topScore >= 0.60 && avgScore >= 0.50)) {
     return 'B'; // 要注意
   } else {
     return 'C'; // 情報不足
