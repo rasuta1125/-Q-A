@@ -18,9 +18,20 @@ export interface QAItem {
   created_at?: string;
 }
 
+// Webソースアイテム型
+export interface WebSource {
+  id?: number;
+  url: string;
+  title?: string;
+  content?: string;
+  last_crawled?: string;
+  created_at?: string;
+}
+
 // 検索結果型
 export interface SearchResult {
-  qa_item: QAItem;
+  qa_item?: QAItem;
+  web_item?: WebSource;
   score: number;
   source_type: 'qa' | 'web';
 }

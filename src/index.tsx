@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { serveStatic } from 'hono/cloudflare-workers';
 import type { Bindings, QAItem, SearchResult, GeneratedAnswer, SourceReference } from './types';
 import { generateEmbedding, generateAnswer, calculateConfidence, getEscalationNote } from './openai';
+import { scrapeWebPage } from './web-scraper';
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -138,6 +139,93 @@ app.delete('/api/qa/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// ===== Web Source API Routes =====
+
+/**
+ * Webソース一覧取得
+ */
+app.get('/api/web', async (c) => {
+  const { DB } = c.env;
+  const { results } = await DB.prepare(
+    'SELECT * FROM web_sources ORDER BY last_crawled DESC'
+  ).all();
+  return c.json(results);
+});
+
+/**
+ * Webソース新規登録（クロール実行）
+ */
+app.post('/api/web', async (c) => {
+  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
+  const { url } = await c.req.json();
+
+  if (!url || !url.startsWith('http')) {
+    return c.json({ error: '有効なURLを入力してください' }, 400);
+  }
+
+  try {
+    // Webページをクロール
+    const { title, content } = await scrapeWebPage(url);
+
+    // D1にWebソースを保存
+    const result = await DB.prepare(
+      `INSERT INTO web_sources (url, title, content, last_crawled)
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(url) DO UPDATE SET 
+         title = excluded.title,
+         content = excluded.content,
+         last_crawled = CURRENT_TIMESTAMP`
+    ).bind(url, title, content).run();
+
+    const webId = result.meta.last_row_id as number || 
+      (await DB.prepare('SELECT id FROM web_sources WHERE url = ?').bind(url).first<any>())?.id;
+
+    // 埋め込みベクトルを生成してVectorizeに保存
+    try {
+      const embeddingText = `${title} ${content}`;
+      const embedding = await generateEmbedding(embeddingText, OPENAI_API_KEY);
+
+      await VECTORIZE.upsert([
+        {
+          id: `web_${webId}`,
+          values: embedding,
+          metadata: {
+            type: 'web',
+            web_id: webId,
+            url: url,
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Vectorize upsert error:', error);
+    }
+
+    return c.json({ id: webId, url, title, content: content.substring(0, 200) + '...' });
+  } catch (error: any) {
+    console.error('Web scraping error:', error);
+    return c.json({ error: `Webページの取得に失敗しました: ${error.message}` }, 500);
+  }
+});
+
+/**
+ * Webソース削除
+ */
+app.delete('/api/web/:id', async (c) => {
+  const { DB, VECTORIZE } = c.env;
+  const id = parseInt(c.req.param('id'));
+
+  await DB.prepare('DELETE FROM web_sources WHERE id = ?').bind(id).run();
+
+  // Vectorizeからも削除
+  try {
+    await VECTORIZE.deleteByIds([`web_${id}`]);
+  } catch (error) {
+    console.error('Vectorize delete error:', error);
+  }
+
+  return c.json({ success: true });
+});
+
 /**
  * 回答生成（RAG）
  */
@@ -153,17 +241,23 @@ app.post('/api/generate', async (c) => {
     // 1. クエリの埋め込みベクトルを生成
     const queryEmbedding = await generateEmbedding(query, OPENAI_API_KEY);
 
-    // 2. Vectorizeで類似検索（上位5件）
-    let searchResults: SearchResult[] = [];
+    // 2. まずQ&Aから検索（優先）
+    let qaResults: SearchResult[] = [];
+    let webResults: SearchResult[] = [];
+    // 3. Q&Aデータから検索（Vectorize or フォールバック）
     try {
       const vectorResults = await VECTORIZE.query(queryEmbedding, {
-        topK: 5,
+        topK: 10,
         returnMetadata: true,
       });
 
-      // 3. Q&Aアイテムの詳細を取得
-      const qaIds = vectorResults.matches
-        .filter((match) => match.score > 0.5) // 類似度が50%以上のみ
+      // Q&AとWebを分離
+      const qaMatches = vectorResults.matches.filter(m => m.metadata?.type === 'qa');
+      const webMatches = vectorResults.matches.filter(m => m.metadata?.type === 'web');
+
+      // Q&Aアイテムの詳細を取得
+      const qaIds = qaMatches
+        .filter((match) => match.score > 0.5)
         .map((match) => match.metadata?.qa_id as number);
 
       if (qaIds.length > 0) {
@@ -172,11 +266,8 @@ app.post('/api/generate', async (c) => {
           `SELECT * FROM qa_items WHERE id IN (${placeholders}) AND is_active = 1`
         ).bind(...qaIds).all();
 
-        // スコアとマージ
-        searchResults = results.map((qa: any) => {
-          const match = vectorResults.matches.find(
-            (m) => m.metadata?.qa_id === qa.id
-          );
+        qaResults = results.map((qa: any) => {
+          const match = qaMatches.find((m) => m.metadata?.qa_id === qa.id);
           return {
             qa_item: qa as QAItem,
             score: match?.score || 0,
@@ -184,10 +275,31 @@ app.post('/api/generate', async (c) => {
           };
         }).sort((a, b) => b.score - a.score);
       }
+
+      // Webソースの詳細を取得
+      const webIds = webMatches
+        .filter((match) => match.score > 0.5)
+        .map((match) => match.metadata?.web_id as number);
+
+      if (webIds.length > 0) {
+        const placeholders = webIds.map(() => '?').join(',');
+        const { results } = await DB.prepare(
+          `SELECT * FROM web_sources WHERE id IN (${placeholders})`
+        ).bind(...webIds).all();
+
+        webResults = results.map((web: any) => {
+          const match = webMatches.find((m) => m.metadata?.web_id === web.id);
+          return {
+            web_item: web,
+            score: match?.score || 0,
+            source_type: 'web' as const,
+          };
+        }).sort((a, b) => b.score - a.score);
+      }
     } catch (error) {
       console.error('Vectorize search error:', error);
-      // Vectorizeエラー時はフォールバック: 全件取得して簡易スコアリング
-      const { results } = await DB.prepare(
+      // Vectorizeエラー時はフォールバック: Q&Aから全件取得して簡易スコアリング
+      const { results: qaData } = await DB.prepare(
         `SELECT * FROM qa_items 
          WHERE is_active = 1 
          ORDER BY priority ASC, id ASC`
@@ -196,7 +308,7 @@ app.post('/api/generate', async (c) => {
       // 簡易スコアリング: より単純で確実なキーワードマッチング
       const queryLower = query.toLowerCase();
       
-      searchResults = results
+      qaResults = qaData
         .map((qa: any) => {
           const questionLower = qa.question.toLowerCase();
           const answerLower = qa.answer.toLowerCase();
@@ -249,21 +361,102 @@ app.post('/api/generate', async (c) => {
         })
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
+
+      // Webソースもフォールバック検索
+      const { results: webData } = await DB.prepare(
+        `SELECT * FROM web_sources ORDER BY last_crawled DESC`
+      ).all();
+
+      webResults = webData
+        .map((web: any) => {
+          const titleLower = (web.title || '').toLowerCase();
+          const contentLower = (web.content || '').toLowerCase();
+
+          let score = 0;
+
+          // タイトルに含まれる
+          if (titleLower.includes(queryLower)) {
+            score = Math.max(score, 0.8);
+          }
+
+          // コンテンツに含まれる
+          if (contentLower.includes(queryLower)) {
+            score = Math.max(score, 0.7);
+          }
+
+          // bigram マッチング
+          if (score < 0.7) {
+            const queryChars = Array.from(queryLower).filter(c => c.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\w]/));
+            let matchedChars = 0;
+            for (let i = 0; i < queryChars.length - 1; i++) {
+              const bigram = queryChars[i] + queryChars[i + 1];
+              if (titleLower.includes(bigram) || contentLower.includes(bigram)) {
+                matchedChars += 2;
+              }
+            }
+            if (matchedChars > 2) {
+              score = Math.max(score, 0.5 + (matchedChars / queryChars.length) * 0.2);
+            }
+          }
+
+          if (score === 0) {
+            score = 0.3;
+          }
+
+          return {
+            web_item: web,
+            score: Math.min(0.85, score),
+            source_type: 'web' as const,
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
     }
 
-    // 4. 信頼度計算
+    // 4. Q&A優先、不足時はWebで補完
+    let searchResults: SearchResult[] = [];
+    const topQAResults = qaResults.slice(0, 3);
+
+    // Q&Aの最高スコアが0.7以上なら、Q&Aのみを使用
+    if (topQAResults.length > 0 && topQAResults[0].score >= 0.7) {
+      searchResults = topQAResults;
+    } 
+    // Q&Aが不十分な場合、Webソースも追加
+    else if (topQAResults.length > 0) {
+      searchResults = [...topQAResults, ...webResults.slice(0, 2)];
+    }
+    // Q&Aが見つからない場合、Webソースのみ
+    else {
+      searchResults = webResults.slice(0, 3);
+    }
+
+    // 5. 信頼度計算
     const scores = searchResults.map((r) => r.score);
     const confidence = calculateConfidence(scores);
 
-    // 5. 信頼度Cの場合は回答生成せず情報不足を返す
+    // 6. 信頼度Cの場合は回答生成せず情報不足を返す
     if (confidence === 'C') {
-      const sources: SourceReference[] = searchResults.slice(0, 3).map((result) => ({
-        type: result.source_type,
-        title: `${result.qa_item.category}: ${result.qa_item.question}`,
-        excerpt: result.qa_item.answer.substring(0, 120) + '...',
-        last_updated: result.qa_item.last_updated,
-        score: result.score,
-      }));
+      const sources: SourceReference[] = searchResults.slice(0, 3).map((result) => {
+        if (result.source_type === 'qa') {
+          return {
+            type: 'qa',
+            title: `${result.qa_item.category}: ${result.qa_item.question}`,
+            excerpt: result.qa_item.answer.substring(0, 120) + '...',
+            last_updated: result.qa_item.last_updated,
+            score: result.score,
+          };
+        } else {
+          const webItem = (result as any).web_item;
+          return {
+            type: 'web',
+            title: webItem.title,
+            excerpt: webItem.content.substring(0, 120) + '...',
+            url: webItem.url,
+            last_updated: webItem.last_crawled,
+            score: result.score,
+          };
+        }
+      });
 
       return c.json({
         answer: '',
@@ -274,28 +467,50 @@ app.post('/api/generate', async (c) => {
       });
     }
 
-    // 6. コンテキスト作成（上位3件）
+    // 7. コンテキスト作成（上位3件）
     const topResults = searchResults.slice(0, 3);
     const context = topResults
       .map((result, index) => {
-        return `【参考情報${index + 1}】(信頼度: ${Math.round(result.score * 100)}%)
+        if (result.source_type === 'qa') {
+          return `【Q&A情報${index + 1}】(類似度: ${Math.round(result.score * 100)}%)
 カテゴリ: ${result.qa_item.category}
 質問: ${result.qa_item.question}
 回答: ${result.qa_item.answer}`;
+        } else {
+          const webItem = (result as any).web_item;
+          return `【Web情報${index + 1}】(類似度: ${Math.round(result.score * 100)}%)
+タイトル: ${webItem.title}
+URL: ${webItem.url}
+内容抜粋: ${webItem.content.substring(0, 500)}`;
+        }
       })
       .join('\n\n');
 
-    // 7. OpenAIで回答生成
+    // 8. OpenAIで回答生成
     const answer = await generateAnswer(query, context, tone, OPENAI_API_KEY);
 
-    // 8. ソース参照情報を整形
-    const sources: SourceReference[] = topResults.map((result) => ({
-      type: result.source_type,
-      title: `${result.qa_item.category}: ${result.qa_item.question}`,
-      excerpt: result.qa_item.answer.substring(0, 120) + '...',
-      last_updated: result.qa_item.last_updated,
-      score: result.score,
-    }));
+    // 9. ソース参照情報を整形
+    const sources: SourceReference[] = topResults.map((result) => {
+      if (result.source_type === 'qa') {
+        return {
+          type: 'qa',
+          title: `${result.qa_item.category}: ${result.qa_item.question}`,
+          excerpt: result.qa_item.answer.substring(0, 120) + '...',
+          last_updated: result.qa_item.last_updated,
+          score: result.score,
+        };
+      } else {
+        const webItem = (result as any).web_item;
+        return {
+          type: 'web',
+          title: webItem.title,
+          excerpt: webItem.content.substring(0, 120) + '...',
+          url: webItem.url,
+          last_updated: webItem.last_crawled,
+          score: result.score,
+        };
+      }
+    });
 
     const response: GeneratedAnswer = {
       answer,
@@ -342,6 +557,9 @@ app.get('/', (c) => {
                         </a>
                         <a href="/admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-cog mr-2"></i>Q&A管理
+                        </a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                     </div>
                 </div>
@@ -465,6 +683,9 @@ app.get('/admin', (c) => {
                         </a>
                         <a href="/admin" class="text-pink-500 font-semibold">
                             <i class="fas fa-cog mr-2"></i>Q&A管理
+                        </a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                     </div>
                 </div>
@@ -605,6 +826,90 @@ app.get('/admin', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/admin.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+/**
+ * Web管理画面
+ */
+app.get('/web-admin', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Web管理 - マカロニスタジオ</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-camera text-pink-500 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-900">マカロニスタジオ Q&A回答ツール</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-home mr-2"></i>回答生成
+                        </a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-cog mr-2"></i>Q&A管理
+                        </a>
+                        <a href="/web-admin" class="text-pink-500 font-semibold">
+                            <i class="fas fa-globe mr-2"></i>Web管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-globe text-pink-500 mr-2"></i>
+                    Webソース管理
+                </h2>
+                
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+                    <p class="text-sm text-blue-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        参照したいWebページのURLを登録すると、内容を自動的に取り込んでQ&A回答の参考情報として使用します。
+                    </p>
+                </div>
+
+                <div class="flex gap-2 mb-6">
+                    <input 
+                        type="url" 
+                        id="urlInput" 
+                        placeholder="https://example.com" 
+                        class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500"
+                    />
+                    <button 
+                        id="addBtn"
+                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                    >
+                        <i class="fas fa-plus mr-2"></i>追加
+                    </button>
+                </div>
+
+                <div id="loadingArea" class="hidden text-center py-4">
+                    <i class="fas fa-spinner fa-spin text-2xl text-pink-500 mb-2"></i>
+                    <p class="text-gray-600">Webページを取得中...</p>
+                </div>
+
+                <div id="webList" class="space-y-4">
+                    <!-- Webソースがここに表示されます -->
+                </div>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/web-admin.js"></script>
     </body>
     </html>
   `);
