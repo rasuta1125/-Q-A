@@ -226,6 +226,79 @@ app.delete('/api/web/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// ===== Template API Routes =====
+
+/**
+ * テンプレート一覧取得
+ */
+app.get('/api/templates', async (c) => {
+  const { DB } = c.env;
+  const { results } = await DB.prepare(
+    'SELECT * FROM templates WHERE is_active = 1 ORDER BY usage_count DESC, id DESC'
+  ).all();
+  return c.json(results);
+});
+
+/**
+ * テンプレート新規登録
+ */
+app.post('/api/templates', async (c) => {
+  const { DB } = c.env;
+  const { title, content, category } = await c.req.json();
+
+  const result = await DB.prepare(
+    `INSERT INTO templates (title, content, category)
+     VALUES (?, ?, ?)`
+  ).bind(title, content, category || null).run();
+
+  return c.json({ id: result.meta.last_row_id, title, content, category });
+});
+
+/**
+ * テンプレート更新
+ */
+app.put('/api/templates/:id', async (c) => {
+  const { DB } = c.env;
+  const id = parseInt(c.req.param('id'));
+  const { title, content, category } = await c.req.json();
+
+  await DB.prepare(
+    `UPDATE templates 
+     SET title = ?, content = ?, category = ?, updated_at = CURRENT_TIMESTAMP
+     WHERE id = ?`
+  ).bind(title, content, category || null, id).run();
+
+  return c.json({ id, title, content, category });
+});
+
+/**
+ * テンプレート削除
+ */
+app.delete('/api/templates/:id', async (c) => {
+  const { DB } = c.env;
+  const id = parseInt(c.req.param('id'));
+
+  await DB.prepare('UPDATE templates SET is_active = 0 WHERE id = ?').bind(id).run();
+
+  return c.json({ success: true });
+});
+
+/**
+ * テンプレート使用（使用回数カウント）
+ */
+app.post('/api/templates/:id/use', async (c) => {
+  const { DB } = c.env;
+  const id = parseInt(c.req.param('id'));
+
+  await DB.prepare(
+    `UPDATE templates 
+     SET usage_count = usage_count + 1, last_used = CURRENT_TIMESTAMP
+     WHERE id = ?`
+  ).bind(id).run();
+
+  return c.json({ success: true });
+});
+
 /**
  * 回答生成（RAG）
  */
@@ -555,6 +628,9 @@ app.get('/', (c) => {
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-clipboard-list mr-2"></i>定型文
+                        </a>
                         <a href="/admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-cog mr-2"></i>Q&A管理
                         </a>
@@ -631,13 +707,31 @@ app.get('/', (c) => {
                     <div id="confidenceBadge" class="mb-4"></div>
                     <div id="escalationNote" class="mb-4"></div>
                     <div id="answerText" class="prose max-w-none bg-gray-50 p-4 rounded-lg whitespace-pre-wrap"></div>
+                    
+                    <div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400">
+                        <p class="text-sm text-blue-700 mb-2">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            思った回答が得られませんでしたか？
+                        </p>
+                        <button 
+                            id="webSearchBtn"
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                        >
+                            <i class="fas fa-globe mr-2"></i>Webで追加検索
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">
-                        <i class="fas fa-book text-blue-500 mr-2"></i>
-                        参考情報（根拠）
-                    </h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-book text-blue-500 mr-2"></i>
+                            参考情報（根拠）
+                        </h3>
+                        <a href="/templates" class="text-pink-500 hover:text-pink-600 font-semibold">
+                            <i class="fas fa-clipboard-list mr-2"></i>定型文を見る
+                        </a>
+                    </div>
                     <div id="sourcesArea" class="space-y-4"></div>
                 </div>
             </div>
@@ -910,6 +1004,151 @@ app.get('/web-admin', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/web-admin.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+/**
+ * テンプレート管理画面
+ */
+app.get('/templates', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>定型文管理 - マカロニスタジオ</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <nav class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-camera text-pink-500 text-2xl mr-3"></i>
+                        <h1 class="text-xl font-bold text-gray-900">マカロニスタジオ Q&A回答ツール</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-home mr-2"></i>回答生成
+                        </a>
+                        <a href="/templates" class="text-pink-500 font-semibold">
+                            <i class="fas fa-clipboard-list mr-2"></i>定型文
+                        </a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-cog mr-2"></i>Q&A管理
+                        </a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-globe mr-2"></i>Web管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-clipboard-list text-pink-500 mr-2"></i>
+                        よく使う返信テンプレート
+                    </h2>
+                    <button 
+                        id="addBtn"
+                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                    >
+                        <i class="fas fa-plus mr-2"></i>新規追加
+                    </button>
+                </div>
+
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
+                    <p class="text-sm text-blue-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        頻繁に使う返信内容をテンプレートとして登録しておくと、ワンクリックでコピーできます。
+                    </p>
+                </div>
+
+                <div id="templateList" class="space-y-4">
+                    <!-- テンプレートがここに表示されます -->
+                </div>
+            </div>
+        </main>
+
+        <!-- 追加/編集モーダル -->
+        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modalTitle" class="text-xl font-bold">テンプレート追加</h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <form id="templateForm" class="space-y-4">
+                    <input type="hidden" id="templateId">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            タイトル <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="title" 
+                            required 
+                            class="w-full border border-gray-300 rounded-lg p-2"
+                            placeholder="例: 営業時間のご案内"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            カテゴリ（任意）
+                        </label>
+                        <input 
+                            type="text" 
+                            id="category" 
+                            class="w-full border border-gray-300 rounded-lg p-2"
+                            placeholder="例: 営業時間、料金、予約"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            返信内容 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="content" 
+                            required 
+                            rows="10"
+                            class="w-full border border-gray-300 rounded-lg p-2"
+                            placeholder="お客様への返信内容をここに入力してください..."
+                        ></textarea>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button 
+                            type="button" 
+                            id="cancelBtn"
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"
+                        >
+                            キャンセル
+                        </button>
+                        <button 
+                            type="submit"
+                            class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg"
+                        >
+                            保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/templates.js"></script>
     </body>
     </html>
   `);

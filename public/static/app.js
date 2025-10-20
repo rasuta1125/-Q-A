@@ -9,6 +9,7 @@ const sourcesArea = document.getElementById('sourcesArea');
 const copyBtn = document.getElementById('copyBtn');
 const confidenceBadge = document.getElementById('confidenceBadge');
 const escalationNote = document.getElementById('escalationNote');
+const webSearchBtn = document.getElementById('webSearchBtn');
 
 // 回答生成ボタンクリック
 generateBtn.addEventListener('click', async () => {
@@ -153,4 +154,17 @@ copyBtn.addEventListener('click', () => {
       copyBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
     }, 2000);
   });
+});
+
+// Webで追加検索ボタン
+webSearchBtn.addEventListener('click', () => {
+  const query = queryInput.value.trim();
+  if (!query) {
+    alert('問い合わせ内容がありません');
+    return;
+  }
+  
+  // Google検索をWeb管理画面へのリンクに変更
+  const searchUrl = `/web-admin?query=${encodeURIComponent(query)}`;
+  window.open(searchUrl, '_blank');
 });

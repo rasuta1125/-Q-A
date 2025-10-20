@@ -28,6 +28,19 @@ export interface WebSource {
   created_at?: string;
 }
 
+// テンプレート型
+export interface Template {
+  id?: number;
+  title: string;
+  content: string;
+  category?: string;
+  is_active?: number;
+  usage_count?: number;
+  last_used?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 // 検索結果型
 export interface SearchResult {
   qa_item?: QAItem;
