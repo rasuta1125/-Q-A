@@ -7,19 +7,44 @@ const closeModal = document.getElementById('closeModal');
 const cancelBtn = document.getElementById('cancelBtn');
 const templateForm = document.getElementById('templateForm');
 const modalTitle = document.getElementById('modalTitle');
+const searchInput = document.getElementById('searchInput');
 
 let currentTemplateId = null;
+let allTemplates = []; // 全テンプレートを保持
 
 // 初期化
 loadTemplates();
+
+// 検索フィルター
+searchInput.addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  filterTemplates(query);
+});
 
 // テンプレート一覧読み込み
 async function loadTemplates() {
   try {
     const response = await axios.get('/api/templates');
-    const items = response.data;
+    allTemplates = response.data; // 全データを保持
+    renderTemplates(allTemplates);
+  } catch (error) {
+    console.error('Error loading templates:', error);
+    templateList.innerHTML = '<p class="text-red-500">データの読み込みに失敗しました</p>';
+  }
+}
 
-    if (items.length === 0) {
+// テンプレート表示
+function renderTemplates(items) {
+  if (items.length === 0) {
+    const query = searchInput.value.trim();
+    if (query) {
+      templateList.innerHTML = `
+        <div class="text-center py-12 text-gray-500">
+          <i class="fas fa-search text-4xl mb-4"></i>
+          <p>「${query}」に一致するテンプレートが見つかりませんでした</p>
+        </div>
+      `;
+    } else {
       templateList.innerHTML = `
         <div class="text-center py-12 text-gray-500">
           <i class="fas fa-clipboard-list text-4xl mb-4"></i>
@@ -27,57 +52,71 @@ async function loadTemplates() {
           <p class="text-sm">「新規追加」ボタンからテンプレートを追加してください</p>
         </div>
       `;
-      return;
     }
+    return;
+  }
 
-    templateList.innerHTML = items.map(item => {
-      const categoryBadge = item.category ? 
-        `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-800 mr-2">
-          ${item.category}
-        </span>` : '';
-      
-      const usageInfo = item.usage_count > 0 ? 
-        `<span class="text-xs text-gray-500">使用回数: ${item.usage_count}回</span>` : '';
+  templateList.innerHTML = items.map(item => {
+    const categoryBadge = item.category ? 
+      `<span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-800 mr-2">
+        ${item.category}
+      </span>` : '';
+    
+    const usageInfo = item.usage_count > 0 ? 
+      `<span class="text-xs text-gray-500">使用回数: ${item.usage_count}回</span>` : '';
 
-      return `
-        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
-          <div class="flex justify-between items-start mb-3">
-            <div class="flex-1">
-              <div class="flex items-center mb-2">
-                ${categoryBadge}
-                <h4 class="font-semibold text-gray-900">${item.title}</h4>
-              </div>
-            </div>
-            <div class="flex space-x-2 ml-4">
-              <button onclick="copyTemplate(${item.id}, \`${item.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" 
-                      class="text-blue-500 hover:text-blue-700"
-                      title="コピー">
-                <i class="fas fa-copy"></i>
-              </button>
-              <button onclick="editTemplate(${item.id})" class="text-green-500 hover:text-green-700" title="編集">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button onclick="deleteTemplate(${item.id})" class="text-red-500 hover:text-red-700" title="削除">
-                <i class="fas fa-trash"></i>
-              </button>
+    return `
+      <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200">
+        <div class="flex justify-between items-start mb-3">
+          <div class="flex-1">
+            <div class="flex items-center mb-2">
+              ${categoryBadge}
+              <h4 class="font-semibold text-gray-900">${item.title}</h4>
             </div>
           </div>
-          
-          <div class="bg-gray-50 p-3 rounded mb-2">
-            <p class="text-sm text-gray-700 whitespace-pre-wrap">${item.content}</p>
-          </div>
-          
-          <div class="flex justify-between items-center text-xs text-gray-400">
-            ${usageInfo}
-            <span>更新: ${new Date(item.updated_at).toLocaleDateString('ja-JP')}</span>
+          <div class="flex space-x-2 ml-4">
+            <button onclick="copyTemplate(${item.id}, \`${item.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" 
+                    class="text-blue-500 hover:text-blue-700"
+                    title="コピー">
+              <i class="fas fa-copy"></i>
+            </button>
+            <button onclick="editTemplate(${item.id})" class="text-green-500 hover:text-green-700" title="編集">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="deleteTemplate(${item.id})" class="text-red-500 hover:text-red-700" title="削除">
+              <i class="fas fa-trash"></i>
+            </button>
           </div>
         </div>
-      `;
-    }).join('');
-  } catch (error) {
-    console.error('Error loading templates:', error);
-    templateList.innerHTML = '<p class="text-red-500">データの読み込みに失敗しました</p>';
+        
+        <div class="bg-gray-50 p-3 rounded mb-2">
+          <p class="text-sm text-gray-700 whitespace-pre-wrap">${item.content}</p>
+        </div>
+        
+        <div class="flex justify-between items-center text-xs text-gray-400">
+          ${usageInfo}
+          <span>更新: ${new Date(item.updated_at).toLocaleDateString('ja-JP')}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 検索フィルタリング
+function filterTemplates(query) {
+  if (!query) {
+    renderTemplates(allTemplates);
+    return;
   }
+
+  const filtered = allTemplates.filter(item => {
+    const titleMatch = item.title.toLowerCase().includes(query);
+    const categoryMatch = item.category && item.category.toLowerCase().includes(query);
+    const contentMatch = item.content.toLowerCase().includes(query);
+    return titleMatch || categoryMatch || contentMatch;
+  });
+
+  renderTemplates(filtered);
 }
 
 // 新規追加ボタン

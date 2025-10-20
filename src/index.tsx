@@ -621,11 +621,12 @@ app.get('/', (c) => {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-2xl mr-3"></i>
-                        <h1 class="text-xl font-bold text-gray-900">マカロニスタジオ Q&A回答ツール</h1>
+                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
+                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
+                    <!-- デスクトップメニュー -->
+                    <div class="hidden md:flex items-center space-x-4">
+                        <a href="/" class="text-gray-700 hover:text-pink-500 font-semibold">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
@@ -638,13 +639,42 @@ app.get('/', (c) => {
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                     </div>
+                    <!-- モバイルメニューボタン -->
+                    <div class="md:hidden flex items-center">
+                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="/" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
+                        <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>定型文
+                    </a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-cog mr-2"></i>Q&A管理
+                    </a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
                 </div>
             </div>
         </nav>
+        <script>
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.toggle('hidden');
+            });
+        </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="bg-white rounded-lg shadow p-6 mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
                     <i class="fas fa-comments text-pink-500 mr-2"></i>
                     問い合わせ内容入力
                 </h2>
@@ -656,7 +686,7 @@ app.get('/', (c) => {
                     <textarea 
                         id="queryInput" 
                         rows="6" 
-                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm sm:text-base"
                         placeholder="お客様からの問い合わせ内容をここに貼り付けてください..."
                     ></textarea>
                 </div>
@@ -665,40 +695,40 @@ app.get('/', (c) => {
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         回答スタイル
                     </label>
-                    <div class="flex space-x-4">
+                    <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
                         <label class="flex items-center">
                             <input type="radio" name="tone" value="polite" checked class="mr-2">
-                            <span>丁寧（推奨）</span>
+                            <span class="text-sm sm:text-base">丁寧（推奨）</span>
                         </label>
                         <label class="flex items-center">
                             <input type="radio" name="tone" value="casual" class="mr-2">
-                            <span>カジュアル</span>
+                            <span class="text-sm sm:text-base">カジュアル</span>
                         </label>
                         <label class="flex items-center">
                             <input type="radio" name="tone" value="brief" class="mr-2">
-                            <span>短文（コピペ用）</span>
+                            <span class="text-sm sm:text-base">短文（コピペ用）</span>
                         </label>
                     </div>
                 </div>
 
                 <button 
                     id="generateBtn"
-                    class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                    class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 text-sm sm:text-base"
                 >
                     <i class="fas fa-magic mr-2"></i>AIで回答生成
                 </button>
             </div>
 
             <div id="resultArea" class="hidden">
-                <div class="bg-white rounded-lg shadow p-6 mb-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold text-gray-900">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
                             <i class="fas fa-check-circle text-green-500 mr-2"></i>
                             生成された回答
                         </h2>
                         <button 
                             id="copyBtn"
-                            class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                            class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
                         >
                             <i class="fas fa-copy mr-2"></i>コピー
                         </button>
@@ -768,12 +798,16 @@ app.get('/admin', (c) => {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-2xl mr-3"></i>
-                        <h1 class="text-xl font-bold text-gray-900">マカロニスタジオ Q&A回答ツール</h1>
+                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
+                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    <!-- デスクトップメニュー -->
+                    <div class="hidden md:flex items-center space-x-4">
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
+                        </a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
                         <a href="/admin" class="text-pink-500 font-semibold">
                             <i class="fas fa-cog mr-2"></i>Q&A管理
@@ -782,20 +816,49 @@ app.get('/admin', (c) => {
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                     </div>
+                    <!-- モバイルメニューボタン -->
+                    <div class="md:hidden flex items-center">
+                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>定型文
+                    </a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
+                        <i class="fas fa-cog mr-2"></i>Q&A管理
+                    </a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
                 </div>
             </div>
         </nav>
+        <script>
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.toggle('hidden');
+            });
+        </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="bg-white rounded-lg shadow p-6 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-gray-900">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
                         <i class="fas fa-list text-pink-500 mr-2"></i>
                         Q&A一覧
                     </h2>
                     <button 
                         id="addBtn"
-                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
                     >
                         <i class="fas fa-plus mr-2"></i>新規追加
                     </button>
@@ -808,12 +871,12 @@ app.get('/admin', (c) => {
         </main>
 
         <!-- 追加/編集モーダル -->
-        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+            <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white my-4">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 id="modalTitle" class="text-xl font-bold">Q&A追加</h3>
+                    <h3 id="modalTitle" class="text-lg sm:text-xl font-bold">Q&A追加</h3>
                     <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-2xl"></i>
+                        <i class="fas fa-times text-xl sm:text-2xl"></i>
                     </button>
                 </div>
 
@@ -944,12 +1007,16 @@ app.get('/web-admin', (c) => {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-2xl mr-3"></i>
-                        <h1 class="text-xl font-bold text-gray-900">マカロニスタジオ Q&A回答ツール</h1>
+                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
+                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    <!-- デスクトップメニュー -->
+                    <div class="hidden md:flex items-center space-x-4">
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
+                        </a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
                         <a href="/admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-cog mr-2"></i>Q&A管理
@@ -958,34 +1025,63 @@ app.get('/web-admin', (c) => {
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                     </div>
+                    <!-- モバイルメニューボタン -->
+                    <div class="md:hidden flex items-center">
+                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>定型文
+                    </a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-cog mr-2"></i>Q&A管理
+                    </a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
+                        <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
                 </div>
             </div>
         </nav>
+        <script>
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.toggle('hidden');
+            });
+        </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="bg-white rounded-lg shadow p-6 mb-6">
-                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
                     <i class="fas fa-globe text-pink-500 mr-2"></i>
                     Webソース管理
                 </h2>
                 
                 <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
-                    <p class="text-sm text-blue-700">
+                    <p class="text-xs sm:text-sm text-blue-700">
                         <i class="fas fa-info-circle mr-2"></i>
                         参照したいWebページのURLを登録すると、内容を自動的に取り込んでQ&A回答の参考情報として使用します。
                     </p>
                 </div>
 
-                <div class="flex gap-2 mb-6">
+                <div class="flex flex-col sm:flex-row gap-2 mb-6">
                     <input 
                         type="url" 
                         id="urlInput" 
                         placeholder="https://example.com" 
-                        class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500"
+                        class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 text-sm sm:text-base"
                     />
                     <button 
                         id="addBtn"
-                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200"
+                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 text-sm sm:text-base"
                     >
                         <i class="fas fa-plus mr-2"></i>追加
                     </button>
@@ -1028,10 +1124,11 @@ app.get('/templates', (c) => {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-2xl mr-3"></i>
-                        <h1 class="text-xl font-bold text-gray-900">マカロニスタジオ Q&A回答ツール</h1>
+                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
+                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
                     </div>
-                    <div class="flex items-center space-x-4">
+                    <!-- デスクトップメニュー -->
+                    <div class="hidden md:flex items-center space-x-4">
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
@@ -1045,20 +1142,49 @@ app.get('/templates', (c) => {
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                     </div>
+                    <!-- モバイルメニューボタン -->
+                    <div class="md:hidden flex items-center">
+                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+                <div class="px-2 pt-2 pb-3 space-y-1">
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>定型文
+                    </a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-cog mr-2"></i>Q&A管理
+                    </a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
                 </div>
             </div>
         </nav>
+        <script>
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.toggle('hidden');
+            });
+        </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="bg-white rounded-lg shadow p-6 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-bold text-gray-900">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
                         <i class="fas fa-clipboard-list text-pink-500 mr-2"></i>
                         よく使う返信テンプレート
                     </h2>
                     <button 
                         id="addBtn"
-                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
                     >
                         <i class="fas fa-plus mr-2"></i>新規追加
                     </button>
@@ -1071,6 +1197,19 @@ app.get('/templates', (c) => {
                     </p>
                 </div>
 
+                <!-- 検索フィルター -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput" 
+                            placeholder="タイトル、カテゴリ、本文で検索..." 
+                            class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                        >
+                        <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
+                    </div>
+                </div>
+
                 <div id="templateList" class="space-y-4">
                     <!-- テンプレートがここに表示されます -->
                 </div>
@@ -1078,12 +1217,12 @@ app.get('/templates', (c) => {
         </main>
 
         <!-- 追加/編集モーダル -->
-        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+            <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white my-4">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 id="modalTitle" class="text-xl font-bold">テンプレート追加</h3>
+                    <h3 id="modalTitle" class="text-lg sm:text-xl font-bold">テンプレート追加</h3>
                     <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-2xl"></i>
+                        <i class="fas fa-times text-xl sm:text-2xl"></i>
                     </button>
                 </div>
 
