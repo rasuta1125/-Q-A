@@ -156,15 +156,150 @@ copyBtn.addEventListener('click', () => {
   });
 });
 
+// Webソース選択モーダル関連
+const webSourceModal = document.getElementById('webSourceModal');
+const closeWebModal = document.getElementById('closeWebModal');
+const cancelWebSearch = document.getElementById('cancelWebSearch');
+const executeWebSearch = document.getElementById('executeWebSearch');
+const webSourceList = document.getElementById('webSourceList');
+
+let selectedWebSources = [];
+
 // Webで追加検索ボタン
-webSearchBtn.addEventListener('click', () => {
+webSearchBtn.addEventListener('click', async () => {
   const query = queryInput.value.trim();
   if (!query) {
     alert('問い合わせ内容がありません');
     return;
   }
   
-  // Google検索をWeb管理画面へのリンクに変更
-  const searchUrl = `/web-admin?query=${encodeURIComponent(query)}`;
-  window.open(searchUrl, '_blank');
+  // Webソース一覧を取得してモーダル表示
+  try {
+    const response = await axios.get('/api/web');
+    const webSources = response.data;
+    
+    if (webSources.length === 0) {
+      alert('登録されているWebソースがありません。先にWeb管理ページからWebソースを追加してください。');
+      window.open('/web-admin', '_blank');
+      return;
+    }
+    
+    // Webソース一覧を表示
+    displayWebSources(webSources);
+    
+    // モーダルを開く
+    webSourceModal.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error loading web sources:', error);
+    alert('Webソースの読み込みに失敗しました');
+  }
+});
+
+// Webソース一覧表示
+function displayWebSources(webSources) {
+  selectedWebSources = [];
+  
+  webSourceList.innerHTML = webSources.map(source => `
+    <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition duration-200">
+      <label class="flex items-start cursor-pointer">
+        <input 
+          type="checkbox" 
+          class="web-source-checkbox mt-1 mr-3 h-5 w-5 text-blue-600 rounded"
+          data-id="${source.id}"
+          data-title="${source.title}"
+          data-url="${source.url}"
+        >
+        <div class="flex-1">
+          <h4 class="font-semibold text-gray-900 mb-1">${source.title}</h4>
+          <a href="${source.url}" target="_blank" class="text-xs text-blue-500 hover:underline block mb-2">
+            <i class="fas fa-external-link-alt mr-1"></i>${source.url}
+          </a>
+          <p class="text-xs text-gray-500">
+            最終更新: ${new Date(source.last_crawled).toLocaleDateString('ja-JP')}
+          </p>
+        </div>
+      </label>
+    </div>
+  `).join('');
+}
+
+// モーダルを閉じる
+closeWebModal.addEventListener('click', () => {
+  webSourceModal.classList.add('hidden');
+});
+
+cancelWebSearch.addEventListener('click', () => {
+  webSourceModal.classList.add('hidden');
+});
+
+// 選択したWebソースで再生成
+executeWebSearch.addEventListener('click', async () => {
+  const checkboxes = document.querySelectorAll('.web-source-checkbox:checked');
+  
+  if (checkboxes.length === 0) {
+    alert('少なくとも1つのWebソースを選択してください');
+    return;
+  }
+  
+  const webSourceIds = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
+  const query = queryInput.value.trim();
+  const tone = document.querySelector('input[name="tone"]:checked').value;
+  
+  // モーダルを閉じる
+  webSourceModal.classList.add('hidden');
+  
+  // UI状態変更
+  resultArea.classList.add('hidden');
+  loadingArea.classList.remove('hidden');
+  generateBtn.disabled = true;
+  
+  try {
+    const response = await axios.post('/api/generate-from-web', {
+      query,
+      tone,
+      web_source_ids: webSourceIds
+    });
+    const data = response.data;
+    
+    // 信頼度バッジ表示
+    displayConfidenceBadge(data.confidence);
+    
+    // エスカレーションノート表示
+    if (data.escalation_note) {
+      escalationNote.innerHTML = `
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-yellow-700 whitespace-pre-wrap">${data.escalation_note}</p>
+            </div>
+          </div>
+        </div>
+      `;
+      escalationNote.classList.remove('hidden');
+    } else {
+      escalationNote.classList.add('hidden');
+    }
+    
+    // 回答表示
+    if (data.answer) {
+      answerText.textContent = data.answer;
+    } else {
+      answerText.innerHTML = '<p class="text-gray-500 italic">情報が不足しているため、回答を生成できませんでした。</p>';
+    }
+    
+    // ソース表示
+    displaySources(data.sources);
+    
+    // 結果エリア表示
+    resultArea.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error:', error);
+    alert('エラーが発生しました: ' + (error.response?.data?.error || error.message));
+  } finally {
+    loadingArea.classList.add('hidden');
+    generateBtn.disabled = false;
+  }
 });

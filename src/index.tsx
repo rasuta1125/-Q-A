@@ -600,6 +600,88 @@ URL: ${webItem.url}
   }
 });
 
+/**
+ * 選択したWebソースのみを使って回答生成
+ */
+app.post('/api/generate-from-web', async (c) => {
+  try {
+    const { query, tone = 'polite', web_source_ids } = await c.req.json();
+    const { env } = c;
+
+    if (!query || !web_source_ids || !Array.isArray(web_source_ids) || web_source_ids.length === 0) {
+      return c.json({ error: '質問とWebソースIDが必要です' }, 400);
+    }
+
+    const OPENAI_API_KEY = env.OPENAI_API_KEY || '';
+
+    // 1. 選択されたWebソースのみを取得
+    const placeholders = web_source_ids.map(() => '?').join(',');
+    const webSourcesQuery = `
+      SELECT id, url, title, content, last_crawled
+      FROM web_sources
+      WHERE id IN (${placeholders}) AND is_active = 1
+    `;
+
+    const webSourcesResult = await env.DB.prepare(webSourcesQuery).bind(...web_source_ids).all();
+    const webSources = webSourcesResult.results as WebSource[];
+
+    if (webSources.length === 0) {
+      return c.json({ error: '選択されたWebソースが見つかりませんでした' }, 404);
+    }
+
+    // 2. 全てのWebソースを検索結果として使用（スコアは固定値）
+    const searchResults: SearchResult[] = webSources.map(web => ({
+      web_item: web,
+      score: 0.75, // 選択されたソースなので信頼度を与える
+      source_type: 'web' as const,
+    }));
+
+    // 3. 信頼度計算
+    const scores = searchResults.map((r) => r.score);
+    const confidence = calculateConfidence(scores);
+
+    // 4. コンテキスト作成
+    const context = searchResults
+      .map((result, index) => {
+        const webItem = result.web_item;
+        return `【Web情報${index + 1}】
+タイトル: ${webItem.title}
+URL: ${webItem.url}
+内容: ${webItem.content.substring(0, 1000)}`;
+      })
+      .join('\n\n');
+
+    // 5. OpenAIで回答生成
+    const answer = await generateAnswer(query, context, tone, OPENAI_API_KEY);
+
+    // 6. ソース参照情報を整形
+    const sources: SourceReference[] = searchResults.map((result) => {
+      const webItem = result.web_item;
+      return {
+        type: 'web',
+        title: webItem.title,
+        excerpt: webItem.content.substring(0, 120) + '...',
+        url: webItem.url,
+        last_updated: webItem.last_crawled,
+        score: result.score,
+      };
+    });
+
+    const response: GeneratedAnswer = {
+      answer,
+      sources,
+      confidence,
+      escalation_note: getEscalationNote(confidence),
+      tone,
+    };
+
+    return c.json(response);
+  } catch (error: any) {
+    console.error('Generate from web error:', error);
+    return c.json({ error: `エラーが発生しました: ${error.message}` }, 500);
+  }
+});
+
 // ===== Frontend Routes =====
 
 /**
@@ -771,6 +853,47 @@ app.get('/', (c) => {
                 <p class="text-gray-600">AIが回答を生成中です...</p>
             </div>
         </main>
+
+        <!-- Webソース選択モーダル -->
+        <div id="webSourceModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+            <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-6 border w-full max-w-3xl shadow-lg rounded-lg bg-white my-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900">
+                        <i class="fas fa-globe text-blue-500 mr-2"></i>
+                        Webソースから追加情報を取得
+                    </h3>
+                    <button id="closeWebModal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl sm:text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400">
+                    <p class="text-xs sm:text-sm text-blue-700">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        参照したいWebソースを選択してください。選択したソースの情報を使って回答を再生成します。
+                    </p>
+                </div>
+
+                <div id="webSourceList" class="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                    <!-- Webソース一覧がここに表示されます -->
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                    <button 
+                        id="cancelWebSearch"
+                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition duration-200"
+                    >
+                        キャンセル
+                    </button>
+                    <button 
+                        id="executeWebSearch"
+                        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition duration-200"
+                    >
+                        <i class="fas fa-search mr-2"></i>この情報で再生成
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
