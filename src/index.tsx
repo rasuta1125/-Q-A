@@ -1053,10 +1053,16 @@ app.get('/admin', (c) => {
                     </h2>
                     <div class="flex flex-col sm:flex-row gap-2">
                         <button 
+                            id="csvImportBtn"
+                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
+                        >
+                            <i class="fas fa-file-csv mr-2"></i>CSVインポート
+                        </button>
+                        <button 
                             id="bulkImportBtn"
                             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
                         >
-                            <i class="fas fa-file-import mr-2"></i>一括インポート
+                            <i class="fas fa-file-import mr-2"></i>テキスト一括
                         </button>
                         <button 
                             id="addBtn"
@@ -1264,7 +1270,102 @@ app.get('/admin', (c) => {
             </div>
         </div>
 
+        <!-- CSVインポートモーダル -->
+        <div id="csvImportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+            <div class="relative top-4 sm:top-10 mx-auto p-4 sm:p-6 border w-full max-w-6xl shadow-lg rounded-lg bg-white my-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900">
+                        <i class="fas fa-file-csv text-green-500 mr-2"></i>
+                        CSVインポート（重複検出付き）
+                    </h3>
+                    <button id="closeCsvImport" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl sm:text-2xl"></i>
+                    </button>
+                </div>
+
+                <!-- ステップ1: ファイル選択 -->
+                <div id="csvStep1" class="mb-4">
+                    <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-400">
+                        <p class="text-xs sm:text-sm text-green-700 mb-2">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            CSV形式でQ&Aデータをインポートできます
+                        </p>
+                        <p class="text-xs text-green-600 mt-2">
+                            <strong>CSV形式:</strong> カテゴリ,質問,回答,キーワード<br>
+                            <strong>例:</strong> 料金,平日割引はありますか?,はい、平日は¥3,000割引です,平日割引,料金
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            CSVファイルを選択
+                        </label>
+                        <input 
+                            type="file" 
+                            id="csvFileInput" 
+                            accept=".csv"
+                            class="block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-lg file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-green-50 file:text-green-700
+                                hover:file:bg-green-100"
+                        />
+                    </div>
+
+                    <button 
+                        id="parseCsvBtn"
+                        class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                    >
+                        <i class="fas fa-search mr-2"></i>CSVを読み込んで重複チェック
+                    </button>
+                </div>
+
+                <!-- ステップ2: 重複検出結果と選抜 -->
+                <div id="csvStep2" class="hidden">
+                    <div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+                        <p class="text-xs sm:text-sm text-yellow-700">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            <span id="duplicateCount">0</span>件の重複が検出されました。採用するバージョンを選択してください。
+                        </p>
+                    </div>
+
+                    <!-- 重複グループ表示エリア -->
+                    <div id="duplicateGroups" class="space-y-4 mb-4 max-h-96 overflow-y-auto">
+                        <!-- 重複グループがここに表示されます -->
+                    </div>
+
+                    <!-- ユニークデータプレビュー -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">
+                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                            重複なし（<span id="uniqueCount">0</span>件）
+                        </h4>
+                        <div id="uniqueList" class="space-y-2 max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+                            <!-- ユニークなQ&Aがここに表示されます -->
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button 
+                            id="cancelCsvImport"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition duration-200"
+                        >
+                            キャンセル
+                        </button>
+                        <button 
+                            id="executeCsvImport"
+                            class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-200"
+                        >
+                            <i class="fas fa-check mr-2"></i>選択した内容でインポート（<span id="finalCount">0</span>件）
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/line-parser.js"></script>
         <script src="/static/admin.js"></script>
     </body>
     </html>
