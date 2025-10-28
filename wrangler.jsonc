@@ -5,18 +5,19 @@
   "pages_build_output_dir": "./dist",
   "compatibility_flags": [
     "nodejs_compat"
-  ],
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "macaroni-qa-db",
-      "database_id": "local-dev"
-    }
-  ],
-  "vectorize": [
-    {
-      "binding": "VECTORIZE",
-      "index_name": "macaroni-qa-index"
-    }
   ]
+  // D1とVectorizeは後でCloudflare Pagesダッシュボードから設定します
+  // "d1_databases": [
+  //   {
+  //     "binding": "DB",
+  //     "database_name": "macaroni-qa-db",
+  //     "database_id": "your-database-id-here"
+  //   }
+  // ],
+  // "vectorize": [
+  //   {
+  //     "binding": "VECTORIZE",
+  //     "index_name": "macaroni-qa-index"
+  //   }
+  // ]
 }
