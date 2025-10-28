@@ -139,6 +139,78 @@ app.delete('/api/qa/:id', async (c) => {
   return c.json({ success: true });
 });
 
+/**
+ * Q&A一括インポート
+ */
+app.post('/api/qa/bulk-import', async (c) => {
+  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
+  const { items } = await c.req.json();
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return c.json({ error: 'インポートするデータがありません' }, 400);
+  }
+
+  let successCount = 0;
+  const errors: string[] = [];
+
+  for (const item of items) {
+    try {
+      // 必須項目のチェック
+      if (!item.category || !item.question || !item.answer) {
+        errors.push(`スキップ: 必須項目が不足しています (質問: ${item.question || '未設定'})`);
+        continue;
+      }
+
+      // D1にQ&Aを保存
+      const result = await DB.prepare(
+        `INSERT INTO qa_items (category, question, answer, keywords, priority, is_active)
+         VALUES (?, ?, ?, ?, ?, ?)`
+      ).bind(
+        item.category,
+        item.question,
+        item.answer,
+        item.keywords || '',
+        item.priority || 2,  // デフォルト: 中
+        item.is_active !== undefined ? item.is_active : 1
+      ).run();
+
+      const qaId = result.meta.last_row_id as number;
+
+      // 埋め込みベクトルを生成してVectorizeに保存
+      try {
+        const embeddingText = `${item.category} ${item.question} ${item.answer} ${item.keywords || ''}`;
+        const embedding = await generateEmbedding(embeddingText, OPENAI_API_KEY);
+
+        await VECTORIZE.upsert([
+          {
+            id: `qa_${qaId}`,
+            values: embedding,
+            metadata: {
+              type: 'qa',
+              qa_id: qaId,
+              category: item.category,
+            },
+          },
+        ]);
+      } catch (error) {
+        console.error('Vectorize upsert error for bulk import:', error);
+        // Vectorizeのエラーはログのみで処理続行
+      }
+
+      successCount++;
+    } catch (error: any) {
+      errors.push(`エラー: ${error.message} (質問: ${item.question || '未設定'})`);
+      console.error('Bulk import item error:', error);
+    }
+  }
+
+  return c.json({
+    inserted: successCount,
+    total: items.length,
+    errors: errors.length > 0 ? errors : undefined,
+  });
+});
+
 // ===== Web Source API Routes =====
 
 /**
@@ -979,12 +1051,20 @@ app.get('/admin', (c) => {
                         <i class="fas fa-list text-pink-500 mr-2"></i>
                         Q&A一覧
                     </h2>
-                    <button 
-                        id="addBtn"
-                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
-                    >
-                        <i class="fas fa-plus mr-2"></i>新規追加
-                    </button>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button 
+                            id="bulkImportBtn"
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
+                        >
+                            <i class="fas fa-file-import mr-2"></i>一括インポート
+                        </button>
+                        <button 
+                            id="addBtn"
+                            class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
+                        >
+                            <i class="fas fa-plus mr-2"></i>新規追加
+                        </button>
+                    </div>
                 </div>
 
                 <div id="qaList" class="space-y-4">
@@ -1101,6 +1181,86 @@ app.get('/admin', (c) => {
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- 一括インポートモーダル -->
+        <div id="bulkImportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
+            <div class="relative top-4 sm:top-10 mx-auto p-4 sm:p-6 border w-full max-w-4xl shadow-lg rounded-lg bg-white my-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900">
+                        <i class="fas fa-file-import text-blue-500 mr-2"></i>
+                        Q&A一括インポート
+                    </h3>
+                    <button id="closeBulkImport" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl sm:text-2xl"></i>
+                    </button>
+                </div>
+
+                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400">
+                    <p class="text-xs sm:text-sm text-blue-700 mb-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        以下の形式で貼り付けてください：
+                    </p>
+                    <pre class="text-xs bg-white p-2 rounded mt-2 overflow-x-auto">カテゴリ: 予約方法
+質問: 予約はどこからできますか？
+回答: ホームページの予約フォームからお願いします
+---
+カテゴリ: 料金
+質問: 料金を教えてください
+回答: 基本料金は○○円です</pre>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Q&Aデータを貼り付け
+                    </label>
+                    <textarea 
+                        id="bulkImportText" 
+                        rows="12" 
+                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 font-mono text-sm"
+                        placeholder="カテゴリ: 予約方法
+質問: 予約はどこからできますか？
+回答: ホームページの予約フォームからお願いします
+---
+カテゴリ: 料金
+質問: 料金を教えてください
+回答: 基本料金は○○円です"
+                    ></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <button 
+                        id="parseDataBtn"
+                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
+                    >
+                        <i class="fas fa-search mr-2"></i>データを解析してプレビュー
+                    </button>
+                </div>
+
+                <div id="previewArea" class="hidden">
+                    <h4 class="font-semibold text-gray-900 mb-3">
+                        <i class="fas fa-eye mr-2"></i>プレビュー（<span id="previewCount">0</span>件）
+                    </h4>
+                    <div id="previewList" class="space-y-3 mb-4 max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+                        <!-- プレビューがここに表示されます -->
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                        <button 
+                            id="cancelBulkImport"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition duration-200"
+                        >
+                            キャンセル
+                        </button>
+                        <button 
+                            id="executeBulkImport"
+                            class="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition duration-200"
+                        >
+                            <i class="fas fa-check mr-2"></i>この内容で一括登録
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

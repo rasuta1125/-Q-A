@@ -8,7 +8,20 @@ const cancelBtn = document.getElementById('cancelBtn');
 const qaForm = document.getElementById('qaForm');
 const modalTitle = document.getElementById('modalTitle');
 
+// 一括インポート関連の要素
+const bulkImportBtn = document.getElementById('bulkImportBtn');
+const bulkImportModal = document.getElementById('bulkImportModal');
+const closeBulkImport = document.getElementById('closeBulkImport');
+const cancelBulkImport = document.getElementById('cancelBulkImport');
+const bulkImportText = document.getElementById('bulkImportText');
+const parseDataBtn = document.getElementById('parseDataBtn');
+const previewArea = document.getElementById('previewArea');
+const previewList = document.getElementById('previewList');
+const previewCount = document.getElementById('previewCount');
+const executeBulkImport = document.getElementById('executeBulkImport');
+
 let currentQAId = null;
+let parsedQAData = [];
 
 // 初期化
 loadQAItems();
@@ -174,3 +187,154 @@ window.deleteQA = async (id) => {
     alert('削除に失敗しました: ' + (error.response?.data?.error || error.message));
   }
 };
+
+// ========== 一括インポート機能 ==========
+
+// 一括インポートモーダルを開く
+bulkImportBtn.addEventListener('click', () => {
+  bulkImportText.value = '';
+  previewArea.classList.add('hidden');
+  parsedQAData = [];
+  bulkImportModal.classList.remove('hidden');
+});
+
+// 一括インポートモーダルを閉じる
+closeBulkImport.addEventListener('click', () => {
+  bulkImportModal.classList.add('hidden');
+});
+
+cancelBulkImport.addEventListener('click', () => {
+  bulkImportModal.classList.add('hidden');
+});
+
+// テキストデータを解析してプレビュー表示
+parseDataBtn.addEventListener('click', () => {
+  const text = bulkImportText.value.trim();
+  
+  if (!text) {
+    alert('データを入力してください');
+    return;
+  }
+
+  try {
+    parsedQAData = parseQAText(text);
+    
+    if (parsedQAData.length === 0) {
+      alert('有効なデータが見つかりませんでした');
+      return;
+    }
+
+    displayPreview(parsedQAData);
+    previewArea.classList.remove('hidden');
+  } catch (error) {
+    console.error('Parse error:', error);
+    alert('データの解析に失敗しました: ' + error.message);
+  }
+});
+
+// テキストをパースしてQ&Aデータ配列を生成
+function parseQAText(text) {
+  const items = [];
+  const blocks = text.split('---').map(b => b.trim()).filter(b => b);
+
+  for (const block of blocks) {
+    const lines = block.split('\n').map(l => l.trim()).filter(l => l);
+    
+    let category = '';
+    let question = '';
+    let answer = '';
+    let keywords = '';
+
+    for (const line of lines) {
+      if (line.startsWith('カテゴリ:') || line.startsWith('カテゴリー:')) {
+        category = line.replace(/^カテゴリ[ー]?:\s*/, '').trim();
+      } else if (line.startsWith('質問:')) {
+        question = line.replace(/^質問:\s*/, '').trim();
+      } else if (line.startsWith('回答:')) {
+        answer = line.replace(/^回答:\s*/, '').trim();
+      } else if (line.startsWith('キーワード:')) {
+        keywords = line.replace(/^キーワード:\s*/, '').trim();
+      } else {
+        // ラベルなしの行は前の項目に追加（改行対応）
+        if (answer) {
+          answer += '\n' + line;
+        } else if (question) {
+          question += '\n' + line;
+        }
+      }
+    }
+
+    // 必須項目がすべて揃っている場合のみ追加
+    if (category && question && answer) {
+      items.push({
+        category,
+        question,
+        answer,
+        keywords,
+        priority: 2,  // デフォルト：中
+        is_active: 1  // デフォルト：有効
+      });
+    }
+  }
+
+  return items;
+}
+
+// プレビューを表示
+function displayPreview(items) {
+  previewCount.textContent = items.length;
+  
+  previewList.innerHTML = items.map((item, index) => `
+    <div class="bg-white border border-gray-300 rounded-lg p-4">
+      <div class="flex items-center mb-2">
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800 mr-2">
+          ${item.category}
+        </span>
+        <span class="text-xs text-gray-500">#${index + 1}</span>
+      </div>
+      <h4 class="font-semibold text-gray-900 mb-1 text-sm">Q: ${escapeHtml(item.question)}</h4>
+      <p class="text-xs text-gray-600 mb-2">${escapeHtml(item.answer.substring(0, 100))}${item.answer.length > 100 ? '...' : ''}</p>
+      ${item.keywords ? `
+        <div class="flex flex-wrap gap-1">
+          ${item.keywords.split(',').map(kw => `
+            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+              ${escapeHtml(kw.trim())}
+            </span>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+// HTMLエスケープ処理
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// 一括登録を実行
+executeBulkImport.addEventListener('click', async () => {
+  if (parsedQAData.length === 0) {
+    alert('登録するデータがありません');
+    return;
+  }
+
+  if (!confirm(`${parsedQAData.length}件のQ&Aを登録します。よろしいですか？`)) {
+    return;
+  }
+
+  try {
+    const response = await axios.post('/api/qa/bulk-import', {
+      items: parsedQAData
+    });
+
+    alert(`${response.data.inserted}件のQ&Aを登録しました！`);
+    bulkImportModal.classList.add('hidden');
+    loadQAItems();
+  } catch (error) {
+    console.error('Bulk import error:', error);
+    alert('一括登録に失敗しました: ' + (error.response?.data?.error || error.message));
+  }
+});
