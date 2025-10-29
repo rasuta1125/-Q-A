@@ -207,9 +207,20 @@ const csvStep2 = document.getElementById('csvStep2');
 const duplicateGroups = document.getElementById('duplicateGroups');
 const uniqueList = document.getElementById('uniqueList');
 const duplicateCount = document.getElementById('duplicateCount');
-const uniqueCount = document.getElementById('uniqueCount');
+const uniqueCount = document.getElementById('uniqueCount'); // HTMLには存在しないが互換性のため保持
 const finalCount = document.getElementById('finalCount');
 const executeCsvImport = document.getElementById('executeCsvImport');
+
+// デバッグ: 要素の存在確認
+console.log('CSV Import Elements:', {
+  csvStep2: !!csvStep2,
+  duplicateGroups: !!duplicateGroups,
+  uniqueList: !!uniqueList,
+  duplicateCount: !!duplicateCount,
+  uniqueCount: !!uniqueCount,
+  finalCount: !!finalCount,
+  executeCsvImport: !!executeCsvImport
+});
 
 let csvParsedData = [];
 let csvDuplicateGroups = [];
@@ -448,8 +459,16 @@ function detectDuplicates(items) {
     }
   }
   
-  duplicateCount.textContent = csvDuplicateGroups.length;
-  uniqueCount.textContent = csvUniqueItems.length;
+  // 重複件数を表示（uniqueCountは削除したのでコメントアウト）
+  if (duplicateCount) {
+    duplicateCount.textContent = csvDuplicateGroups.length;
+  }
+  
+  console.log('重複検出結果:', {
+    重複グループ: csvDuplicateGroups.length,
+    ユニークアイテム: csvUniqueItems.length,
+    合計: csvDuplicateGroups.length + csvUniqueItems.length
+  });
 }
 
 // 質問の類似度判定
