@@ -1323,11 +1323,25 @@ app.get('/admin', (c) => {
 
                 <!-- ステップ2: 重複検出結果と選抜 -->
                 <div id="csvStep2" class="hidden">
-                    <div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400">
-                        <p class="text-xs sm:text-sm text-yellow-700">
-                            <i class="fas fa-exclamation-triangle mr-2"></i>
-                            <span id="duplicateCount">0</span>件の重複が検出されました。採用するバージョンを選択してください。
+                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 flex items-center justify-between">
+                        <p class="text-xs sm:text-sm text-blue-700">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <span id="duplicateCount">0</span>件の重複が検出されました。インポートするQ&Aを選択してください。
                         </p>
+                        <div class="flex space-x-2">
+                            <button 
+                                onclick="selectAllItems()"
+                                class="text-xs px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+                            >
+                                <i class="fas fa-check-double mr-1"></i>すべて選択
+                            </button>
+                            <button 
+                                onclick="deselectAllItems()"
+                                class="text-xs px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition"
+                            >
+                                <i class="fas fa-times mr-1"></i>すべて解除
+                            </button>
+                        </div>
                     </div>
 
                     <!-- 重複グループ表示エリア -->
@@ -1337,11 +1351,7 @@ app.get('/admin', (c) => {
 
                     <!-- ユニークデータプレビュー -->
                     <div class="mb-4">
-                        <h4 class="font-semibold text-gray-900 mb-2">
-                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                            重複なし（<span id="uniqueCount">0</span>件）
-                        </h4>
-                        <div id="uniqueList" class="space-y-2 max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg">
+                        <div id="uniqueList" class="max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg">
                             <!-- ユニークなQ&Aがここに表示されます -->
                         </div>
                     </div>

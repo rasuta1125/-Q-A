@@ -416,6 +416,7 @@ function detectDuplicates(items) {
     if (processed.has(i)) continue;
     
     const item = items[i];
+    item.checked = true; // デフォルトで選択状態
     const duplicates = [item];
     
     // 他のアイテムと比較
@@ -426,6 +427,7 @@ function detectDuplicates(items) {
       
       // 質問の類似度チェック
       if (isSimilarQuestion(item.question, otherItem.question)) {
+        otherItem.checked = false; // 重複は初期状態で未選択
         duplicates.push(otherItem);
         processed.add(j);
       }
@@ -437,10 +439,11 @@ function detectDuplicates(items) {
       // 重複グループ
       csvDuplicateGroups.push({
         items: duplicates,
-        selectedIndex: 0 // デフォルトで最初を選択
+        selectedIndex: 0 // デフォルトで最初を選択（互換性維持）
       });
     } else {
-      // ユニーク
+      // ユニーク（デフォルトで選択）
+      item.checked = true;
       csvUniqueItems.push(item);
     }
   }
@@ -517,27 +520,41 @@ function displayDuplicateGroups() {
   
   duplicateGroups.innerHTML = csvDuplicateGroups.map((group, groupIndex) => `
     <div class="border border-yellow-300 rounded-lg p-4 bg-yellow-50">
-      <h5 class="font-semibold text-gray-900 mb-3">
-        <i class="fas fa-copy text-yellow-600 mr-2"></i>
-        重複グループ ${groupIndex + 1}（${group.items.length}件）
-      </h5>
+      <div class="flex items-center justify-between mb-3">
+        <h5 class="font-semibold text-gray-900">
+          <i class="fas fa-copy text-yellow-600 mr-2"></i>
+          重複グループ ${groupIndex + 1}（${group.items.length}件）
+        </h5>
+        <div class="space-x-2">
+          <button 
+            onclick="selectAllInGroup(${groupIndex})"
+            class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+          >
+            <i class="fas fa-check-double mr-1"></i>全選択
+          </button>
+          <button 
+            onclick="deselectAllInGroup(${groupIndex})"
+            class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+          >
+            <i class="fas fa-times mr-1"></i>全解除
+          </button>
+        </div>
+      </div>
       <div class="space-y-2">
         ${group.items.map((item, itemIndex) => `
-          <label class="flex items-start p-3 border rounded cursor-pointer hover:bg-white transition ${itemIndex === group.selectedIndex ? 'bg-white border-green-500 ring-2 ring-green-200' : 'bg-gray-50 border-gray-300'}">
+          <label class="flex items-start p-3 border rounded cursor-pointer hover:bg-white transition ${item.checked ? 'bg-white border-green-500 ring-2 ring-green-200' : 'bg-gray-50 border-gray-300'}">
             <input 
-              type="radio" 
-              name="duplicate_group_${groupIndex}" 
-              value="${itemIndex}"
-              ${itemIndex === group.selectedIndex ? 'checked' : ''}
-              onchange="selectDuplicateItem(${groupIndex}, ${itemIndex})"
-              class="mt-1 mr-3"
+              type="checkbox" 
+              ${item.checked ? 'checked' : ''}
+              onchange="toggleDuplicateItem(${groupIndex}, ${itemIndex})"
+              class="mt-1 mr-3 w-4 h-4"
             />
             <div class="flex-1">
               <div class="flex items-center mb-1">
                 <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800 mr-2">
                   ${escapeHtml(item.category)}
                 </span>
-                ${itemIndex === group.selectedIndex ? '<span class="text-xs text-green-600 font-semibold"><i class="fas fa-check-circle mr-1"></i>選択中</span>' : ''}
+                ${item.checked ? '<span class="text-xs text-green-600 font-semibold"><i class="fas fa-check-circle mr-1"></i>選択中</span>' : '<span class="text-xs text-gray-500">未選択</span>'}
               </div>
               <p class="text-sm font-semibold text-gray-900 mb-1">Q: ${escapeHtml(item.question)}</p>
               <p class="text-xs text-gray-600">${escapeHtml(item.answer.substring(0, 100))}${item.answer.length > 100 ? '...' : ''}</p>
@@ -549,9 +566,23 @@ function displayDuplicateGroups() {
   `).join('');
 }
 
-// 重複グループのアイテムを選択
-window.selectDuplicateItem = (groupIndex, itemIndex) => {
-  csvDuplicateGroups[groupIndex].selectedIndex = itemIndex;
+// 重複グループのアイテムを選択/解除
+window.toggleDuplicateItem = (groupIndex, itemIndex) => {
+  csvDuplicateGroups[groupIndex].items[itemIndex].checked = !csvDuplicateGroups[groupIndex].items[itemIndex].checked;
+  displayDuplicateGroups();
+  updateFinalCount();
+};
+
+// 重複グループ内の全選択
+window.selectAllInGroup = (groupIndex) => {
+  csvDuplicateGroups[groupIndex].items.forEach(item => item.checked = true);
+  displayDuplicateGroups();
+  updateFinalCount();
+};
+
+// 重複グループ内の全解除
+window.deselectAllInGroup = (groupIndex) => {
+  csvDuplicateGroups[groupIndex].items.forEach(item => item.checked = false);
   displayDuplicateGroups();
   updateFinalCount();
 };
@@ -563,25 +594,132 @@ function displayUniqueItems() {
     return;
   }
   
-  uniqueList.innerHTML = csvUniqueItems.map((item, index) => `
-    <div class="bg-white border border-gray-200 rounded-lg p-3">
-      <div class="flex items-center mb-1">
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800 mr-2">
-          ${escapeHtml(item.category)}
-        </span>
-        <span class="text-xs text-gray-500">#${index + 1}</span>
+  // 全選択/全解除ボタン
+  const headerHtml = `
+    <div class="flex items-center justify-between mb-3 pb-2 border-b">
+      <h5 class="font-semibold text-gray-900">
+        <i class="fas fa-star text-blue-600 mr-2"></i>
+        ユニークなQ&A（${csvUniqueItems.length}件）
+      </h5>
+      <div class="space-x-2">
+        <button 
+          onclick="selectAllUnique()"
+          class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
+        >
+          <i class="fas fa-check-double mr-1"></i>全選択
+        </button>
+        <button 
+          onclick="deselectAllUnique()"
+          class="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+        >
+          <i class="fas fa-times mr-1"></i>全解除
+        </button>
       </div>
-      <p class="text-sm font-semibold text-gray-900 mb-1">Q: ${escapeHtml(item.question)}</p>
-      <p class="text-xs text-gray-600">${escapeHtml(item.answer.substring(0, 80))}${item.answer.length > 80 ? '...' : ''}</p>
     </div>
+  `;
+  
+  uniqueList.innerHTML = headerHtml + csvUniqueItems.map((item, index) => `
+    <label class="flex items-start bg-white border rounded-lg p-3 mb-2 cursor-pointer hover:border-blue-300 transition ${item.checked ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'}">
+      <input 
+        type="checkbox" 
+        ${item.checked ? 'checked' : ''}
+        onchange="toggleUniqueItem(${index})"
+        class="mt-1 mr-3 w-4 h-4"
+      />
+      <div class="flex-1">
+        <div class="flex items-center mb-1">
+          <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800 mr-2">
+            ${escapeHtml(item.category)}
+          </span>
+          <span class="text-xs text-gray-500">#${index + 1}</span>
+          ${item.checked ? '<span class="text-xs text-green-600 font-semibold ml-2"><i class="fas fa-check-circle mr-1"></i>選択中</span>' : ''}
+        </div>
+        <p class="text-sm font-semibold text-gray-900 mb-1">Q: ${escapeHtml(item.question)}</p>
+        <p class="text-xs text-gray-600">${escapeHtml(item.answer.substring(0, 80))}${item.answer.length > 80 ? '...' : ''}</p>
+      </div>
+    </label>
   `).join('');
 }
 
+// ユニークアイテムを選択/解除
+window.toggleUniqueItem = (index) => {
+  csvUniqueItems[index].checked = !csvUniqueItems[index].checked;
+  displayUniqueItems();
+  updateFinalCount();
+};
+
+// ユニークアイテムの全選択
+window.selectAllUnique = () => {
+  csvUniqueItems.forEach(item => item.checked = true);
+  displayUniqueItems();
+  updateFinalCount();
+};
+
+// ユニークアイテムの全解除
+window.deselectAllUnique = () => {
+  csvUniqueItems.forEach(item => item.checked = false);
+  displayUniqueItems();
+  updateFinalCount();
+};
+
+// 全体の全選択
+window.selectAllItems = () => {
+  // 重複グループのすべてのアイテムを選択
+  csvDuplicateGroups.forEach(group => {
+    group.items.forEach(item => item.checked = true);
+  });
+  
+  // ユニークアイテムをすべて選択
+  csvUniqueItems.forEach(item => item.checked = true);
+  
+  // 表示を更新
+  displayDuplicateGroups();
+  displayUniqueItems();
+  updateFinalCount();
+  
+  console.log('✅ すべてのアイテムを選択しました');
+};
+
+// 全体の全解除
+window.deselectAllItems = () => {
+  // 重複グループのすべてのアイテムを解除
+  csvDuplicateGroups.forEach(group => {
+    group.items.forEach(item => item.checked = false);
+  });
+  
+  // ユニークアイテムをすべて解除
+  csvUniqueItems.forEach(item => item.checked = false);
+  
+  // 表示を更新
+  displayDuplicateGroups();
+  displayUniqueItems();
+  updateFinalCount();
+  
+  console.log('❌ すべてのアイテムの選択を解除しました');
+};
+
 // 最終件数を更新
 function updateFinalCount() {
-  const selectedFromDuplicates = csvDuplicateGroups.map(g => g.items[g.selectedIndex]);
-  csvSelectedItems = [...csvUniqueItems, ...selectedFromDuplicates];
+  // 重複グループから選択されているアイテムを取得
+  const selectedFromDuplicates = csvDuplicateGroups.flatMap(g => 
+    g.items.filter(item => item.checked)
+  );
+  
+  // ユニークアイテムから選択されているものを取得
+  const selectedUnique = csvUniqueItems.filter(item => item.checked);
+  
+  // 全選択アイテムを結合
+  csvSelectedItems = [...selectedUnique, ...selectedFromDuplicates];
+  
+  // 件数を表示
   finalCount.textContent = csvSelectedItems.length;
+  
+  // 選択状況のログ
+  console.log('選択状況:', {
+    重複グループから: selectedFromDuplicates.length,
+    ユニークから: selectedUnique.length,
+    合計: csvSelectedItems.length
+  });
 }
 
 // CSVインポートを実行
