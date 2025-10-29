@@ -248,30 +248,92 @@ cancelCsvImport.addEventListener('click', () => {
   csvImportModal.classList.add('hidden');
 });
 
-// CSVを読み込んで重複チェック
+// CSVを読み込んで重複チェック（複数ファイル対応）
 parseCsvBtn.addEventListener('click', async () => {
-  const file = csvFileInput.files[0];
+  const files = csvFileInput.files;
   
-  if (!file) {
+  if (!files || files.length === 0) {
     alert('CSVファイルを選択してください');
     return;
   }
 
+  // 進捗表示要素
+  const csvProgress = document.getElementById('csvProgress');
+  const csvProgressText = document.getElementById('csvProgressText');
+  const csvProgressBar = document.getElementById('csvProgressBar');
+
   try {
-    const text = await file.text();
-    console.log('File read successfully, length:', text.length);
+    console.log(`📁 ${files.length}個のファイルを読み込み開始`);
     
-    // parseCSV関数を呼び出す前に少し待つ（スクリプト読み込み確保）
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // 進捗表示を表示
+    if (csvProgress) {
+      csvProgress.classList.remove('hidden');
+      csvProgressText.textContent = `0/${files.length}`;
+      csvProgressBar.style.width = '0%';
+    }
     
-    csvParsedData = parseCSV(text);
+    // ボタンを無効化
+    parseCsvBtn.disabled = true;
+    parseCsvBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>読み込み中...';
+    
+    // 全ファイルからQ&Aを収集
+    const allQAItems = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      console.log(`📄 [${i + 1}/${files.length}] ${file.name} を読み込み中...`);
+      
+      // 進捗更新
+      if (csvProgressText) {
+        csvProgressText.textContent = `${i + 1}/${files.length}`;
+      }
+      if (csvProgressBar) {
+        const progress = ((i + 1) / files.length) * 100;
+        csvProgressBar.style.width = `${progress}%`;
+      }
+      
+      try {
+        const text = await file.text();
+        console.log(`  ✅ ${file.name}: ${text.length}文字読み込み`);
+        
+        // 各ファイルをパース
+        const items = parseCSV(text);
+        console.log(`  ✅ ${file.name}: ${items.length}件のQ&Aを抽出`);
+        
+        // ファイル名を記録（デバッグ用）
+        items.forEach(item => {
+          item.sourceFile = file.name;
+        });
+        
+        allQAItems.push(...items);
+        
+      } catch (fileError) {
+        console.error(`  ❌ ${file.name}: 読み込みエラー`, fileError);
+        // 個別ファイルのエラーは警告のみで続行
+      }
+      
+      // UI更新のため少し待つ
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    console.log(`✅ 全ファイル読み込み完了: 合計 ${allQAItems.length}件のQ&A`);
+    
+    // 進捗を非表示
+    if (csvProgress) {
+      csvProgress.classList.add('hidden');
+    }
+    
+    csvParsedData = allQAItems;
     
     if (csvParsedData.length === 0) {
-      alert('有効なデータが見つかりませんでした。ファイル形式を確認してください。');
+      alert('有効なデータが見つかりませんでした。\n\nファイル形式を確認してください。\nLINE Official Accountからエクスポートしたトーク履歴CSVである必要があります。');
+      parseCsvBtn.disabled = false;
+      parseCsvBtn.innerHTML = '<i class="fas fa-search mr-2"></i>CSVを読み込んで重複チェック';
       return;
     }
 
     // 重複検出
+    console.log('🔍 重複検出を開始...');
     detectDuplicates(csvParsedData);
     
     // ステップ2を表示
@@ -283,9 +345,22 @@ parseCsvBtn.addEventListener('click', async () => {
     displayUniqueItems();
     updateFinalCount();
     
+    // ボタンを元に戻す
+    parseCsvBtn.disabled = false;
+    parseCsvBtn.innerHTML = '<i class="fas fa-search mr-2"></i>CSVを読み込んで重複チェック';
+    
+    console.log('✅ 処理完了！');
+    
   } catch (error) {
-    console.error('CSV parse error:', error);
+    console.error('❌ CSV parse error:', error);
     alert('CSVの読み込みに失敗しました: ' + error.message + '\n\nブラウザのコンソール（F12）で詳細を確認してください。');
+    
+    // エラー時も進捗を非表示にしてボタンを戻す
+    if (csvProgress) {
+      csvProgress.classList.add('hidden');
+    }
+    parseCsvBtn.disabled = false;
+    parseCsvBtn.innerHTML = '<i class="fas fa-search mr-2"></i>CSVを読み込んで重複チェック';
   }
 });
 
