@@ -1,13 +1,13 @@
 // LINE Official Account エクスポートデータ専用パーサー
 
-console.log('line-parser.js loaded successfully');
+console.log('line-parser.js loading...');
 
 /**
  * LINE CSVデータからQ&Aを抽出
  * @param {string} csvText - CSVテキスト
  * @returns {Array} - 抽出されたQ&A配列
  */
-function parseLINECSV(csvText) {
+window.parseLINECSV = function parseLINECSV(csvText) {
   console.log('parseLINECSV called, csvText length:', csvText.length);
   
   // Windows改行コード（\r\n）を統一
@@ -351,3 +351,6 @@ function extractKeywords(question, answer) {
   
   return Array.from(keywords).join(',');
 }
+
+// グローバルスコープに登録完了
+console.log('line-parser.js loaded successfully. parseLINECSV available:', typeof window.parseLINECSV);

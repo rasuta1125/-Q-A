@@ -1,5 +1,8 @@
 // Q&A管理画面のJavaScript
 
+// スクリプト読み込み確認
+console.log('admin.js loaded');
+
 const qaList = document.getElementById('qaList');
 const addBtn = document.getElementById('addBtn');
 const modal = document.getElementById('modal');
@@ -245,10 +248,15 @@ parseCsvBtn.addEventListener('click', async () => {
 
   try {
     const text = await file.text();
+    console.log('File read successfully, length:', text.length);
+    
+    // parseCSV関数を呼び出す前に少し待つ（スクリプト読み込み確保）
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     csvParsedData = parseCSV(text);
     
     if (csvParsedData.length === 0) {
-      alert('有効なデータが見つかりませんでした');
+      alert('有効なデータが見つかりませんでした。ファイル形式を確認してください。');
       return;
     }
 
@@ -266,7 +274,7 @@ parseCsvBtn.addEventListener('click', async () => {
     
   } catch (error) {
     console.error('CSV parse error:', error);
-    alert('CSVの読み込みに失敗しました: ' + error.message);
+    alert('CSVの読み込みに失敗しました: ' + error.message + '\n\nブラウザのコンソール（F12）で詳細を確認してください。');
   }
 });
 
@@ -274,20 +282,26 @@ parseCsvBtn.addEventListener('click', async () => {
 function parseCSV(text) {
   console.log('parseCSV called, text length:', text.length);
   console.log('First 200 chars:', text.substring(0, 200));
+  console.log('typeof parseLINECSV:', typeof parseLINECSV);
+  console.log('window.parseLINECSV:', typeof window.parseLINECSV);
   
   // LINE Official Account形式かチェック
   if (text.includes('送信者タイプ,送信者名,送信日,送信時刻,内容')) {
     console.log('LINE Official Account形式を検出しました');
     
-    // parseLINECSV関数が存在するかチェック
-    if (typeof parseLINECSV === 'undefined') {
-      console.error('parseLINECSV関数が見つかりません！line-parser.jsが読み込まれていない可能性があります');
-      alert('エラー: LINE解析機能が読み込まれていません。ページを再読み込みしてください。');
+    // parseLINECSV関数が存在するかチェック（グローバルスコープも確認）
+    const parseFunc = window.parseLINECSV || (typeof parseLINECSV !== 'undefined' ? parseLINECSV : null);
+    
+    if (!parseFunc) {
+      console.error('parseLINECSV関数が見つかりません！');
+      console.error('line-parser.jsが読み込まれているか確認してください');
+      console.error('利用可能な関数:', Object.keys(window).filter(k => k.includes('parse')));
+      alert('エラー: LINE解析機能が読み込まれていません。ページを再読み込み（Ctrl+Shift+R / Cmd+Shift+R）してください。');
       return [];
     }
     
     try {
-      const result = parseLINECSV(text);
+      const result = parseFunc(text);
       console.log('LINEパース結果:', result.length, '件');
       return result;
     } catch (error) {
