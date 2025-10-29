@@ -284,29 +284,61 @@ function parseCSV(text) {
   console.log('First 200 chars:', text.substring(0, 200));
   console.log('typeof parseLINECSV:', typeof parseLINECSV);
   console.log('window.parseLINECSV:', typeof window.parseLINECSV);
+  console.log('Available window functions:', Object.keys(window).filter(k => k.toLowerCase().includes('parse')));
   
   // LINE Official Account形式かチェック
   if (text.includes('送信者タイプ,送信者名,送信日,送信時刻,内容')) {
     console.log('LINE Official Account形式を検出しました');
     
-    // parseLINECSV関数が存在するかチェック（グローバルスコープも確認）
-    const parseFunc = window.parseLINECSV || (typeof parseLINECSV !== 'undefined' ? parseLINECSV : null);
+    // parseLINECSV関数が存在するかチェック（複数の方法で確認）
+    let parseFunc = null;
+    
+    // 方法1: window.parseLINECSV
+    if (typeof window.parseLINECSV === 'function') {
+      parseFunc = window.parseLINECSV;
+      console.log('Found parseLINECSV via window.parseLINECSV');
+    }
+    // 方法2: グローバルスコープ
+    else if (typeof parseLINECSV === 'function') {
+      parseFunc = parseLINECSV;
+      console.log('Found parseLINECSV via global scope');
+    }
+    // 方法3: window['parseLINECSV']
+    else if (window['parseLINECSV'] && typeof window['parseLINECSV'] === 'function') {
+      parseFunc = window['parseLINECSV'];
+      console.log('Found parseLINECSV via window["parseLINECSV"]');
+    }
     
     if (!parseFunc) {
-      console.error('parseLINECSV関数が見つかりません！');
-      console.error('line-parser.jsが読み込まれているか確認してください');
-      console.error('利用可能な関数:', Object.keys(window).filter(k => k.includes('parse')));
-      alert('エラー: LINE解析機能が読み込まれていません。ページを再読み込み（Ctrl+Shift+R / Cmd+Shift+R）してください。');
+      console.error('❌ parseLINECSV関数が見つかりません！');
+      console.error('line-parser.jsが正しく読み込まれているか確認してください');
+      console.error('利用可能なwindowプロパティ:', Object.keys(window).slice(0, 50));
+      
+      // より詳細なエラーメッセージ
+      const errorMsg = 
+        'エラー: LINE解析機能が読み込まれていません。\n\n' +
+        '以下を試してください:\n' +
+        '1. ページを強制再読み込み（Ctrl+Shift+R / Cmd+Shift+R）\n' +
+        '2. ブラウザのキャッシュをクリア\n' +
+        '3. 別のブラウザで試す\n\n' +
+        '問題が続く場合は開発者に連絡してください。';
+      
+      alert(errorMsg);
       return [];
     }
     
     try {
+      console.log('✅ Calling parseLINECSV...');
       const result = parseFunc(text);
-      console.log('LINEパース結果:', result.length, '件');
+      console.log('✅ LINEパース成功:', result.length, '件');
+      if (result.length > 0) {
+        console.log('Sample result:', result[0]);
+      }
       return result;
     } catch (error) {
-      console.error('LINEパースエラー:', error);
-      alert('LINE形式の解析に失敗しました: ' + error.message);
+      console.error('❌ LINEパースエラー:', error);
+      console.error('Error stack:', error.stack);
+      alert('LINE形式の解析に失敗しました: ' + error.message + '\n\nブラウザのコンソール（F12）で詳細を確認してください。');
       return [];
     }
   }

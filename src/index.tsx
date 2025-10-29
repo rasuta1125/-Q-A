@@ -1365,7 +1365,35 @@ app.get('/admin', (c) => {
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <!-- LINE CSV パーサーを先に読み込む -->
         <script src="/static/line-parser.js"></script>
+        <!-- admin.jsは line-parser.js の後に読み込む -->
+        <script>
+          // line-parser.jsの読み込み確認
+          window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded - Checking parseLINECSV...');
+            console.log('window.parseLINECSV exists:', typeof window.parseLINECSV);
+            
+            if (typeof window.parseLINECSV !== 'function') {
+              console.error('⚠️ WARNING: parseLINECSV is not loaded!');
+              console.error('Attempting to reload line-parser.js...');
+              
+              // 動的に再読み込みを試みる
+              const script = document.createElement('script');
+              script.src = '/static/line-parser.js';
+              script.onload = function() {
+                console.log('✅ line-parser.js reloaded successfully');
+                console.log('parseLINECSV now available:', typeof window.parseLINECSV);
+              };
+              script.onerror = function() {
+                console.error('❌ Failed to reload line-parser.js');
+              };
+              document.head.appendChild(script);
+            } else {
+              console.log('✅ parseLINECSV loaded successfully');
+            }
+          });
+        </script>
         <script src="/static/admin.js"></script>
     </body>
     </html>
