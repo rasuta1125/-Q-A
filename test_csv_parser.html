@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSVパーサーテスト</title>
+</head>
+<body>
+    <h1>CSVパーサーテスト</h1>
+    <input type="file" id="testFile" accept=".csv">
+    <button onclick="testParse()">テスト</button>
+    <pre id="output"></pre>
+
+    <script src="/static/line-parser.js"></script>
+    <script>
+        async function testParse() {
+            const file = document.getElementById('testFile').files[0];
+            if (!file) {
+                alert('ファイルを選択してください');
+                return;
+            }
+
+            const text = await file.text();
+            console.log('File loaded, size:', text.length);
+            
+            try {
+                const result = parseLINECSV(text);
+                document.getElementById('output').textContent = JSON.stringify(result, null, 2);
+                console.log('Parse result:', result);
+            } catch (error) {
+                console.error('Parse error:', error);
+                document.getElementById('output').textContent = 'Error: ' + error.message + '\n' + error.stack;
+            }
+        }
+    </script>
+</body>
+</html>

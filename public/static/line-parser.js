@@ -1,12 +1,21 @@
 // LINE Official Account エクスポートデータ専用パーサー
 
+console.log('line-parser.js loaded successfully');
+
 /**
  * LINE CSVデータからQ&Aを抽出
  * @param {string} csvText - CSVテキスト
  * @returns {Array} - 抽出されたQ&A配列
  */
 function parseLINECSV(csvText) {
-  const lines = csvText.split('\n');
+  console.log('parseLINECSV called, csvText length:', csvText.length);
+  
+  // Windows改行コード（\r\n）を統一
+  const normalizedText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalizedText.split('\n');
+  
+  console.log('Total lines:', lines.length);
+  
   const messages = [];
   let currentMessage = null;
   let inMultilineField = false;
@@ -73,8 +82,14 @@ function parseLINECSV(csvText) {
     }
   }
   
+  console.log('Parsed messages:', messages.length);
+  
   // Q&Aペアを抽出
-  return extractQAPairs(messages);
+  const qaItems = extractQAPairs(messages);
+  
+  console.log('Extracted QA items:', qaItems.length);
+  
+  return qaItems;
 }
 
 /**
@@ -112,6 +127,8 @@ function parseLINECSVLine(line) {
  * メッセージリストからQ&Aペアを抽出
  */
 function extractQAPairs(messages) {
+  console.log('extractQAPairs called, messages:', messages.length);
+  
   const qaItems = [];
   const systemMessages = new Set([
     '写真を送信しました',
@@ -166,6 +183,9 @@ function extractQAPairs(messages) {
     }
   }
   
+  console.log('Final QA items count:', qaItems.length);
+  console.log('Sample QA items:', qaItems.slice(0, 3));
+  
   return qaItems;
 }
 
@@ -178,6 +198,8 @@ function extractEmbeddedQA(content) {
   
   let currentQ = null;
   let currentA = null;
+  
+  console.log('extractEmbeddedQA: processing', lines.length, 'lines');
   
   for (const line of lines) {
     const trimmed = line.trim();
@@ -221,6 +243,8 @@ function extractEmbeddedQA(content) {
       source: 'LINE (FAQ)'
     });
   }
+  
+  console.log('extractEmbeddedQA: found', qaItems.length, 'QA items');
   
   return qaItems;
 }

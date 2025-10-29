@@ -272,13 +272,33 @@ parseCsvBtn.addEventListener('click', async () => {
 
 // CSV解析関数（LINEフォーマット自動検出）
 function parseCSV(text) {
+  console.log('parseCSV called, text length:', text.length);
+  console.log('First 200 chars:', text.substring(0, 200));
+  
   // LINE Official Account形式かチェック
   if (text.includes('送信者タイプ,送信者名,送信日,送信時刻,内容')) {
     console.log('LINE Official Account形式を検出しました');
-    return parseLINECSV(text);
+    
+    // parseLINECSV関数が存在するかチェック
+    if (typeof parseLINECSV === 'undefined') {
+      console.error('parseLINECSV関数が見つかりません！line-parser.jsが読み込まれていない可能性があります');
+      alert('エラー: LINE解析機能が読み込まれていません。ページを再読み込みしてください。');
+      return [];
+    }
+    
+    try {
+      const result = parseLINECSV(text);
+      console.log('LINEパース結果:', result.length, '件');
+      return result;
+    } catch (error) {
+      console.error('LINEパースエラー:', error);
+      alert('LINE形式の解析に失敗しました: ' + error.message);
+      return [];
+    }
   }
   
   // 通常のCSV形式
+  console.log('通常のCSV形式として処理します');
   const items = [];
   const lines = text.split('\n').map(l => l.trim()).filter(l => l);
   
