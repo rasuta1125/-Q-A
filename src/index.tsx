@@ -783,6 +783,9 @@ app.get('/', (c) => {
                         <a href="/" class="text-gray-700 hover:text-pink-500 font-semibold">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
+                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -806,6 +809,9 @@ app.get('/', (c) => {
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     <a href="/" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
                         <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1001,6 +1007,9 @@ app.get('/admin', (c) => {
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
+                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1024,6 +1033,9 @@ app.get('/admin', (c) => {
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1458,6 +1470,9 @@ app.get('/web-admin', (c) => {
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
+                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1481,6 +1496,9 @@ app.get('/web-admin', (c) => {
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1575,6 +1593,9 @@ app.get('/templates', (c) => {
                         <a href="/" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-home mr-2"></i>回答生成
                         </a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
+                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                        </a>
                         <a href="/templates" class="text-pink-500 font-semibold">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1598,6 +1619,9 @@ app.get('/templates', (c) => {
                 <div class="px-2 pt-2 pb-3 space-y-1">
                     <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-home mr-2"></i>回答生成
+                    </a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1920,6 +1944,81 @@ app.get('/instagram', (c) => {
         </style>
     </head>
     <body>
+        <!-- ナビゲーションバー -->
+        <nav style="background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb;">
+            <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
+                <div style="display: flex; justify-content: space-between; height: 4rem; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-camera" style="color: #ec4899; font-size: 1.5rem; margin-right: 0.75rem;"></i>
+                        <h1 style="font-size: 1.25rem; font-weight: bold; color: #111827;">マカロニスタジオ</h1>
+                    </div>
+                    <!-- デスクトップメニュー -->
+                    <div id="desktopNav" style="display: none; align-items: center; gap: 1rem;">
+                        <a href="/" style="color: #374151; text-decoration: none; font-weight: 500;">
+                            <i class="fas fa-home" style="margin-right: 0.5rem;"></i>回答生成
+                        </a>
+                        <a href="/instagram" style="color: #ec4899; text-decoration: none; font-weight: 600;">
+                            <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
+                        </a>
+                        <a href="/templates" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
+                        </a>
+                        <a href="/admin" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
+                        </a>
+                        <a href="/web-admin" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-globe" style="margin-right: 0.5rem;"></i>Web管理
+                        </a>
+                    </div>
+                    <!-- モバイルメニューボタン -->
+                    <div id="mobileNavBtn" style="display: none;">
+                        <button onclick="toggleMobileMenu()" style="color: #374151; background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-bars" style="font-size: 1.5rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileNavMenu" style="display: none; border-top: 1px solid #e5e7eb; padding: 0.5rem;">
+                <a href="/" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none; border-radius: 0.375rem;">
+                    <i class="fas fa-home" style="margin-right: 0.5rem;"></i>回答生成
+                </a>
+                <a href="/instagram" style="display: block; padding: 0.75rem 1rem; color: #ec4899; text-decoration: none; font-weight: 600; background: #fce7f3; border-radius: 0.375rem;">
+                    <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
+                </a>
+                <a href="/templates" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none; border-radius: 0.375rem;">
+                    <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
+                </a>
+                <a href="/admin" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none; border-radius: 0.375rem;">
+                    <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
+                </a>
+                <a href="/web-admin" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none; border-radius: 0.375rem;">
+                    <i class="fas fa-globe" style="margin-right: 0.5rem;"></i>Web管理
+                </a>
+            </div>
+        </nav>
+        <script>
+            // レスポンシブナビゲーション
+            function updateNav() {
+                const desktopNav = document.getElementById('desktopNav');
+                const mobileNavBtn = document.getElementById('mobileNavBtn');
+                if (window.innerWidth >= 768) {
+                    desktopNav.style.display = 'flex';
+                    mobileNavBtn.style.display = 'none';
+                    document.getElementById('mobileNavMenu').style.display = 'none';
+                } else {
+                    desktopNav.style.display = 'none';
+                    mobileNavBtn.style.display = 'block';
+                }
+            }
+            function toggleMobileMenu() {
+                const menu = document.getElementById('mobileNavMenu');
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+            updateNav();
+            window.addEventListener('resize', updateNav);
+        </script>
+        
         <div class="container">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
