@@ -1736,4 +1736,537 @@ app.get('/templates', (c) => {
   `);
 });
 
+/**
+ * Instagram投稿文生成ページ
+ */
+app.get('/instagram', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Instagram投稿文作成 - マカロニスタジオ</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            body {
+                background: linear-gradient(135deg, #FFF8DC 0%, #FFE4E1 100%);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }
+            
+            .container {
+                max-width: 900px;
+                margin: 0 auto;
+                padding: 40px 20px;
+            }
+            
+            .menu-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                padding: 20px;
+                border: 3px solid #FFB6C1;
+                border-radius: 15px;
+                background: white;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .menu-btn:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(255, 105, 180, 0.3);
+                border-color: #FF69B4;
+            }
+            
+            .menu-btn.active {
+                background: linear-gradient(135deg, #FF69B4, #FFB6C1);
+                border-color: #FF1493;
+                color: white;
+            }
+            
+            .menu-emoji {
+                font-size: 2.5rem;
+            }
+            
+            .menu-name {
+                font-weight: 600;
+                font-size: 0.95rem;
+            }
+            
+            .generate-btn {
+                background: linear-gradient(135deg, #32CD32, #00CED1);
+                color: white;
+                font-weight: bold;
+                padding: 16px 32px;
+                border-radius: 12px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s;
+                font-size: 1.1rem;
+            }
+            
+            .generate-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 10px 25px rgba(50, 205, 50, 0.4);
+            }
+            
+            .generate-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            
+            .result-card {
+                background: white;
+                border-radius: 20px;
+                padding: 30px;
+                margin-bottom: 30px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            }
+            
+            .post-text {
+                white-space: pre-wrap;
+                font-family: inherit;
+                line-height: 1.8;
+                color: #333;
+                background: #FFF8DC;
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 4px solid #FF69B4;
+            }
+            
+            .copy-btn {
+                background: #FF69B4;
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s;
+                font-weight: 600;
+                width: 100%;
+                margin-top: 15px;
+            }
+            
+            .copy-btn:hover {
+                background: #FF1493;
+                transform: scale(1.02);
+            }
+            
+            .copy-btn.copied {
+                background: #32CD32;
+            }
+            
+            .copy-btn-small {
+                background: #FFA07A;
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                font-size: 0.85rem;
+                transition: all 0.3s;
+            }
+            
+            .copy-btn-small:hover {
+                background: #FF8C69;
+            }
+            
+            .hidden {
+                display: none !important;
+            }
+            
+            .spinner {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #FF69B4;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .hashtag-section {
+                margin-top: 20px;
+                padding-top: 20px;
+                border-top: 2px dashed #FFB6C1;
+            }
+            
+            .hashtags {
+                color: #0095f6;
+                line-height: 1.8;
+                font-size: 0.9rem;
+            }
+            
+            @media (max-width: 768px) {
+                .container {
+                    padding: 20px 15px;
+                }
+                
+                .menu-emoji {
+                    font-size: 2rem;
+                }
+                
+                .menu-name {
+                    font-size: 0.85rem;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- ヘッダー -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #FF69B4;">
+                    <i class="fab fa-instagram mr-3"></i>
+                    Instagram投稿文作成
+                </h1>
+                <p class="text-lg text-gray-700">
+                    マカロニスタジオの投稿スタイルで、AIが3パターン自動生成します✨
+                </p>
+            </div>
+            
+            <!-- メニュー選択 -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-center" style="color: #FF69B4;">
+                    <i class="fas fa-camera mr-2"></i>撮影メニューを選択
+                </h2>
+                <div id="menuGrid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- メニューボタンがここに表示されます -->
+                </div>
+            </div>
+            
+            <!-- 入力フォーム -->
+            <div id="inputSection" class="hidden bg-white rounded-2xl p-8 shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-6" style="color: #FF69B4;">
+                    <i class="fas fa-pen mr-2"></i>撮影情報を入力
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- 撮影の様子 -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-2 text-gray-800">
+                            📝 撮影の様子や特徴（簡単なメモでOK）
+                        </label>
+                        <textarea 
+                            id="description" 
+                            rows="4"
+                            placeholder="例: 元気いっぱいの男の子、パパと一緒に撮影、ピンクのドレス姿など"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
+                        ></textarea>
+                        <p class="text-sm text-gray-500 mt-1">※空欄でも生成できます</p>
+                    </div>
+                    
+                    <!-- 雰囲気 -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-3 text-gray-800">
+                            🎨 雰囲気（複数選択可）
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" name="mood" value="元気" class="w-5 h-5 text-pink-500 rounded">
+                                <span>元気</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" name="mood" value="かわいい" class="w-5 h-5 text-pink-500 rounded">
+                                <span>かわいい</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" name="mood" value="ほんわか" class="w-5 h-5 text-pink-500 rounded">
+                                <span>ほんわか</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" name="mood" value="感動的" class="w-5 h-5 text-pink-500 rounded">
+                                <span>感動的</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 特別なポイント -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-2 text-gray-800">
+                            ✨ 特別なポイント（あれば）
+                        </label>
+                        <input 
+                            type="text" 
+                            id="specialPoint"
+                            placeholder="例: 限定カラー、初めての笑顔、兄弟での撮影など"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
+                        />
+                    </div>
+                    
+                    <!-- 生成ボタン -->
+                    <div class="text-center pt-4">
+                        <button id="generateBtn" class="generate-btn">
+                            <i class="fas fa-magic mr-2"></i>投稿文を生成する
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ローディング -->
+            <div id="loadingSection" class="hidden bg-white rounded-2xl p-12 shadow-lg mb-8 text-center">
+                <div class="spinner mb-6"></div>
+                <h3 class="text-2xl font-bold mb-2" style="color: #FF69B4;">
+                    AIが投稿文を作成中です...
+                </h3>
+                <p class="text-gray-600">少々お待ちください</p>
+            </div>
+            
+            <!-- 結果表示 -->
+            <div id="resultsSection" class="hidden">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold mb-2" style="color: #FF69B4;">
+                        <i class="fas fa-check-circle mr-2"></i>生成完了！
+                    </h2>
+                    <p class="text-gray-700">お好みのパターンをコピーしてInstagramに投稿してください</p>
+                </div>
+                
+                <div id="resultsContainer">
+                    <!-- 結果がここに表示されます -->
+                </div>
+                
+                <div class="text-center mt-8">
+                    <button id="resetBtn" class="px-8 py-4 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
+                        <i class="fas fa-redo mr-2"></i>別の投稿文を作成する
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/instagram.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+/**
+ * Instagram投稿文生成API
+ */
+app.post('/api/instagram/generate', async (c) => {
+  const { OPENAI_API_KEY } = c.env;
+  const { menu, description, moods, specialPoint } = await c.req.json();
+  
+  // メニューデータ
+  const MENU_DATA: Record<string, any> = {
+    '100day': {
+      name: '100日フォト',
+      emoji: '👶',
+      title: '𝟏𝟎𝟎 𝐝𝐚𝐲𝐬 𝐩𝐡𝐨𝐭𝐨',
+      services: ['家族写真込み', '兄弟写真込み', '全データ納品（100枚保証）', 'お衣装着放題'],
+      hashtags: '#100日 #100日フォト #赤ちゃん #ベビーフォト #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ #沖縄ママ #沖縄イベント'
+    },
+    'birthday': {
+      name: 'バースデーフォト',
+      emoji: '🎂',
+      title: '𝟏𝐬𝐭 𝐛𝐢𝐫𝐭𝐡𝐝𝐚𝐲',
+      services: ['家族写真込み', '兄弟写真込み', '全データ納品', '衣装着放題', 'リピーター割有り'],
+      hashtags: '#1歳 #お誕生日 #1stbirthday #バースデーフォト #誕生日 #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ #沖縄ママ #沖縄イベント'
+    },
+    'shichigosan': {
+      name: '七五三',
+      emoji: '👘',
+      title: '𝟕𝟓𝟑 𝐩𝐡𝐨𝐭𝐨',
+      services: ['ヘアメイク付き', '和装1着 洋装1着', '家族写真込み', '兄弟写真込み', 'お衣装着放題', 'リピーター割有り'],
+      hashtags: '#七五三 #753 #七五三撮影 #家族写真 #記念撮影 #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ #沖縄ママ #沖縄イベント'
+    },
+    'milkbath': {
+      name: 'ミルクバス',
+      emoji: '🫧',
+      title: '𝐦𝐢𝐥𝐤 𝐛𝐚𝐭𝐡',
+      services: ['バスローブ姿', 'ドレス姿', '私服姿も可能', '家族写真込み', '全データお渡し（100枚保証）', 'お衣装着放題'],
+      hashtags: '#ミルクバス #沐浴 #ベビーフォト #ハーフバースデー #赤ちゃん #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ #沖縄ママ'
+    },
+    'halfbirthday': {
+      name: 'ハーフバースデー',
+      emoji: '⭐',
+      title: '𝐡𝐚𝐥𝐟 𝐛𝐢𝐫𝐭𝐡𝐝𝐚𝐲',
+      services: ['家族写真込み', '兄弟写真込み', '全データ納品（100枚保証）', 'お衣装着放題'],
+      hashtags: '#ハーフバースデー #生後6ヶ月 #ベビーフォト #halfbirthday #6ヶ月 #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ #沖縄ママ'
+    },
+    'family': {
+      name: 'ファミリーフォト',
+      emoji: '👨‍👩‍👧',
+      title: '𝐟𝐚𝐦𝐢𝐥𝐲 𝐩𝐡𝐨𝐭𝐨',
+      services: ['家族写真込み', '兄弟写真込み', 'お衣装着放題', '全データ納品（100枚保証）'],
+      hashtags: '#家族写真 #familyphoto #familytime #家族時間 #ファミリーフォト #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ #沖縄イベント'
+    },
+    'smashcake': {
+      name: 'スマッシュケーキ',
+      emoji: '🎂',
+      title: '𝐬𝐦𝐚𝐬𝐡 𝐜𝐚𝐤𝐞',
+      services: ['合成着色料不使用（お野菜パウダー使用）', '純正クリーム', '国産小麦粉使用（福岡産）', 'アレルギー除去対応', '3日前までのご予約', '家族写真込み', '兄弟写真込み', 'フォトフレーム付き'],
+      hashtags: '#スマッシュケーキ #smashcake #1歳 #1stbirthday #誕生日 #沖縄 #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ'
+    },
+    'ryuso': {
+      name: '琉装撮影',
+      emoji: '🌺',
+      title: '-OKINAWA- 琉装',
+      services: ['沖縄伝統琉装', '100日〜6ヶ月サイズ対応', '家族写真込み', '全データお渡し', 'フォトフレーム付き', '貸切スタジオ'],
+      hashtags: '#琉装 #琉装撮影 #沖縄 #伝統 #ベビーフォト #那覇 #沖縄フォトスタジオ #沖縄写真館 #マカロニスタジオ'
+    }
+  };
+  
+  const menuData = MENU_DATA[menu];
+  if (!menuData) {
+    return c.json({ error: 'Invalid menu' }, 400);
+  }
+  
+  // サービス内容を整形
+  const servicesList = menuData.services.map((s: string) => `◻︎${s}`).join('\n');
+  
+  // 過去投稿のサンプル（文体の学習用）
+  const styleSamples = `
+【過去の投稿サンプル】
+
+サンプル1:
+〻
+𝐦𝐢𝐥𝐤 𝐛𝐚𝐭𝐡 𝐭𝐢𝐦𝐞
+🌼🌼🌼
+
+夢中な姿から不思議そうな顔を色んな角度で📷
+全部が可愛くて愛おしいね
+
+◻︎家族写真込み
+◻︎兄弟写真込み
+◻︎全データお渡し（100枚保証）
+◻︎お衣装着放題
+
+〈ご予約方法〉
+ＨＰまたはDM💌
+または公式LINEまで（🔍マカロニスタジオ）
+
+サンプル2:
+〻
+ママと僕
+
+笑顔120％で、見ているこちらも自然と笑顔になってしまう瞬間🫶🏻
+
+最初は1人での撮影が少し苦手だったけれど、後半は慣れてたくさん遊んでくれて一安心🤣
+こんな素敵な笑顔に出会えて、心温まる撮影時間になりました🫶🏻
+
+小さな当店までお越しいただき、誠にありがとうございます✨
+
+サンプル3:
+〻
+𝐟𝐚𝐦𝐢𝐥𝐲 𝐩𝐡𝐨𝐭𝐨
+
+ドキドキしながら始まった家族写真。
+枚数を重ねるごとに、少しずつ笑顔や自然体が出てくる姿も、大切な瞬間です🫧
+少し緊張している姿も、頑張っている証で、とても愛おしいもの。
+
+全データ納品の良さは、こうした一瞬一瞬の違いを見つけ、家族みんなでゆっくり振り返りながら、温かい気持ちを共有できることだと思います🙂‍↕️🤍
+`;
+  
+  // プロンプト生成
+  const prompt = `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」のInstagram投稿担当者です。
+過去の投稿スタイルを参考に、新しい投稿文を3パターン作成してください。
+
+【撮影メニュー】
+${menuData.name} ${menuData.emoji}
+
+【撮影の様子】
+${description}
+
+【雰囲気】
+${moods.join('、')}
+
+【特別なポイント】
+${specialPoint}
+
+${styleSamples}
+
+【投稿スタイルの特徴】
+1. 文頭に「〻」を必ず付ける
+2. タイトルに特殊フォントを使用（例: ${menuData.title}）
+3. 絵文字を適度に使用（🫶🏻、🌼、✨、🫧、💛など）
+4. 改行を効果的に使い読みやすく
+5. 温かく丁寧な語り口
+6. 撮影体験や子どもの様子を具体的に描写
+7. お客様への感謝の気持ちを表現
+8. 150-300文字程度
+
+【サービス内容（必ず含める）】
+${servicesList}
+
+【予約方法（必ず含める）】
+〈ご予約方法〉
+ＨＰまたはDM💌
+または公式LINEまで（🔍マカロニスタジオ）
+
+【出力形式】
+以下の形式で3パターン出力してください。各パターンは「---パターンX---」で区切ってください：
+
+---パターン1---
+[投稿文]
+
+---パターン2---
+[投稿文]
+
+---パターン3---
+[投稿文]`;
+
+  try {
+    // OpenAI API呼び出し
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'あなたはプロのSNSコンテンツライターです。温かく優しい文体で、子どもたちや家族の素敵な瞬間を伝える投稿文を作成します。過去の投稿サンプルの文体・構成・雰囲気を忠実に再現してください。'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 1500
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`OpenAI API error: ${response.statusText} - ${errorData}`);
+    }
+    
+    const data = await response.json();
+    const generatedText = data.choices[0].message.content;
+    
+    // 3パターンに分割
+    const patterns = generatedText.split(/---パターン\d---/).filter((p: string) => p.trim());
+    
+    const results = patterns.slice(0, 3).map((text: string) => ({
+      text: text.trim(),
+      hashtags: menuData.hashtags
+    }));
+    
+    // 3パターン未満の場合はエラー
+    if (results.length < 3) {
+      throw new Error('Failed to generate 3 patterns');
+    }
+    
+    return c.json({
+      patterns: results
+    });
+    
+  } catch (error: any) {
+    console.error('Instagram generation error:', error);
+    return c.json({ error: error.message || 'Generation failed' }, 500);
+  }
+});
+
 export default app;
