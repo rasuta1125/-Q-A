@@ -149,12 +149,75 @@ function displayResult(article, wordCount) {
   
   // 原稿を表示
   document.getElementById('articlePreview').textContent = article;
+  document.getElementById('articleEditor').value = article;
   
   // 文字数表示
   document.getElementById('wordCount').textContent = `${wordCount}文字`;
   
+  // 編集モードをリセット
+  isEditMode = false;
+  updateEditMode();
+  
   // スムーズスクロール
   document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// 編集モード管理
+let isEditMode = false;
+
+window.toggleEditMode = () => {
+  isEditMode = !isEditMode;
+  updateEditMode();
+};
+
+function updateEditMode() {
+  const preview = document.getElementById('articlePreview');
+  const editor = document.getElementById('articleEditor');
+  const editBtn = document.getElementById('editToggleBtn');
+  const editHint = document.getElementById('editHint');
+  
+  if (isEditMode) {
+    // 編集モードに切り替え
+    preview.classList.add('hidden');
+    editor.classList.remove('hidden');
+    editHint.classList.remove('hidden');
+    editBtn.innerHTML = '<i class="fas fa-eye mr-1"></i>プレビュー';
+    editBtn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+    editBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+    
+    // エディタにフォーカス
+    editor.focus();
+    
+    // エディタの内容変更を監視
+    editor.addEventListener('input', updateWordCountFromEditor);
+  } else {
+    // プレビューモードに切り替え
+    // エディタの内容をプレビューに反映
+    const editedContent = editor.value;
+    preview.textContent = editedContent;
+    generatedArticle = editedContent; // コピー用に更新
+    
+    preview.classList.remove('hidden');
+    editor.classList.add('hidden');
+    editHint.classList.add('hidden');
+    editBtn.innerHTML = '<i class="fas fa-edit mr-1"></i>編集';
+    editBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+    editBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+    
+    // 文字数を更新
+    updateWordCount(editedContent);
+  }
+}
+
+function updateWordCountFromEditor() {
+  const content = document.getElementById('articleEditor').value;
+  updateWordCount(content);
+  generatedArticle = content; // リアルタイムで更新
+}
+
+function updateWordCount(content) {
+  const count = content.length;
+  document.getElementById('wordCount').textContent = `${count}文字`;
 }
 
 // 原稿コピー
@@ -184,6 +247,7 @@ window.resetForm = () => {
   selectedArticleType = null;
   selectedMenu = null;
   generatedArticle = null;
+  isEditMode = false;
   
   // フォームをクリア
   document.getElementById('title').value = '';
