@@ -2535,10 +2535,27 @@ app.get('/blog', (c) => {
                             <h3 class="text-2xl font-bold" style="color: #3b82f6;">
                                 <i class="fas fa-file-alt mr-2"></i>ブログ原稿
                             </h3>
-                            <span id="wordCount" class="text-lg font-semibold text-gray-600"></span>
+                            <div class="flex items-center gap-4">
+                                <button id="editToggleBtn" onclick="toggleEditMode()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold text-sm">
+                                    <i class="fas fa-edit mr-1"></i>編集
+                                </button>
+                                <span id="wordCount" class="text-lg font-semibold text-gray-600"></span>
+                            </div>
                         </div>
                         
+                        <!-- プレビューモード -->
                         <div id="articlePreview" class="article-preview"></div>
+                        
+                        <!-- 編集モード -->
+                        <textarea 
+                            id="articleEditor" 
+                            class="hidden w-full article-preview border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
+                            rows="20"
+                            style="resize: vertical; font-family: inherit;"
+                        ></textarea>
+                        <p id="editHint" class="hidden text-sm text-gray-500 mt-2">
+                            💡 編集後、「プレビュー」で確認してから「原稿をコピー」してください
+                        </p>
                     </div>
                     
                     <button class="copy-btn" onclick="copyArticle()">
