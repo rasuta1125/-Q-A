@@ -786,6 +786,9 @@ app.get('/', (c) => {
                         <a href="/instagram" class="text-gray-700 hover:text-pink-500">
                             <i class="fab fa-instagram mr-2"></i>Instagram投稿
                         </a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-blog mr-2"></i>ブログ原稿
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -812,6 +815,9 @@ app.get('/', (c) => {
                     </a>
                     <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                    </a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-blog mr-2"></i>ブログ原稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1010,6 +1016,9 @@ app.get('/admin', (c) => {
                         <a href="/instagram" class="text-gray-700 hover:text-pink-500">
                             <i class="fab fa-instagram mr-2"></i>Instagram投稿
                         </a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-blog mr-2"></i>ブログ原稿
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1036,6 +1045,9 @@ app.get('/admin', (c) => {
                     </a>
                     <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                    </a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-blog mr-2"></i>ブログ原稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1473,6 +1485,9 @@ app.get('/web-admin', (c) => {
                         <a href="/instagram" class="text-gray-700 hover:text-pink-500">
                             <i class="fab fa-instagram mr-2"></i>Instagram投稿
                         </a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-blog mr-2"></i>ブログ原稿
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1499,6 +1514,9 @@ app.get('/web-admin', (c) => {
                     </a>
                     <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                    </a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-blog mr-2"></i>ブログ原稿
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -2147,6 +2165,403 @@ app.get('/instagram', (c) => {
 });
 
 /**
+ * ブログ原稿生成ページ
+ */
+app.get('/blog', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ブログ原稿作成 - マカロニスタジオ</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            body {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            }
+            
+            .container {
+                max-width: 1000px;
+                margin: 0 auto;
+                padding: 40px 20px;
+            }
+            
+            .article-type-btn {
+                padding: 20px;
+                border: 3px solid #3b82f6;
+                border-radius: 15px;
+                background: white;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-align: center;
+            }
+            
+            .article-type-btn:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
+            }
+            
+            .article-type-btn.active {
+                background: linear-gradient(135deg, #3b82f6, #60a5fa);
+                border-color: #2563eb;
+                color: white;
+            }
+            
+            .menu-btn {
+                padding: 15px;
+                border: 2px solid #06b6d4;
+                border-radius: 12px;
+                background: white;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-align: center;
+            }
+            
+            .menu-btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
+            }
+            
+            .menu-btn.active {
+                background: #06b6d4;
+                color: white;
+            }
+            
+            .generate-btn {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                font-weight: bold;
+                padding: 16px 32px;
+                border-radius: 12px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s;
+                font-size: 1.1rem;
+            }
+            
+            .generate-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+            }
+            
+            .result-card {
+                background: white;
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            }
+            
+            .article-preview {
+                white-space: pre-wrap;
+                font-family: inherit;
+                line-height: 1.8;
+                color: #333;
+                background: #f8fafc;
+                padding: 25px;
+                border-radius: 12px;
+                border-left: 4px solid #3b82f6;
+                max-height: 600px;
+                overflow-y: auto;
+            }
+            
+            .copy-btn {
+                background: #3b82f6;
+                color: white;
+                padding: 14px 28px;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s;
+                font-weight: 600;
+                width: 100%;
+                font-size: 1.1rem;
+            }
+            
+            .copy-btn:hover {
+                background: #2563eb;
+                transform: scale(1.02);
+            }
+            
+            .copy-btn.copied {
+                background: #10b981;
+            }
+            
+            .hidden {
+                display: none !important;
+            }
+            
+            .spinner {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3b82f6;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            @media (max-width: 768px) {
+                .container {
+                    padding: 20px 15px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <!-- ナビゲーションバー -->
+        <nav style="background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb;">
+            <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
+                <div style="display: flex; justify-content: space-between; height: 4rem; align-items: center;">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-camera" style="color: #ec4899; font-size: 1.5rem; margin-right: 0.75rem;"></i>
+                        <h1 style="font-size: 1.25rem; font-weight: bold; color: #111827;">マカロニスタジオ</h1>
+                    </div>
+                    <!-- デスクトップメニュー -->
+                    <div id="desktopNav" style="display: none; align-items: center; gap: 1rem;">
+                        <a href="/" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-home" style="margin-right: 0.5rem;"></i>回答生成
+                        </a>
+                        <a href="/instagram" style="color: #374151; text-decoration: none;">
+                            <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
+                        </a>
+                        <a href="/blog" style="color: #3b82f6; text-decoration: none; font-weight: 600;">
+                            <i class="fas fa-blog" style="margin-right: 0.5rem;"></i>ブログ原稿
+                        </a>
+                        <a href="/templates" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
+                        </a>
+                        <a href="/admin" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
+                        </a>
+                    </div>
+                    <!-- モバイルメニューボタン -->
+                    <div id="mobileNavBtn" style="display: none;">
+                        <button onclick="toggleMobileMenu()" style="color: #374151; background: none; border: none; cursor: pointer;">
+                            <i class="fas fa-bars" style="font-size: 1.5rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- モバイルメニュー -->
+            <div id="mobileNavMenu" style="display: none; border-top: 1px solid #e5e7eb; padding: 0.5rem;">
+                <a href="/" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
+                    <i class="fas fa-home" style="margin-right: 0.5rem;"></i>回答生成
+                </a>
+                <a href="/instagram" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
+                    <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
+                </a>
+                <a href="/blog" style="display: block; padding: 0.75rem 1rem; color: #3b82f6; text-decoration: none; font-weight: 600; background: #dbeafe; border-radius: 0.375rem;">
+                    <i class="fas fa-blog" style="margin-right: 0.5rem;"></i>ブログ原稿
+                </a>
+                <a href="/templates" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
+                    <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
+                </a>
+                <a href="/admin" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
+                    <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
+                </a>
+            </div>
+        </nav>
+        <script>
+            function updateNav() {
+                const desktopNav = document.getElementById('desktopNav');
+                const mobileNavBtn = document.getElementById('mobileNavBtn');
+                if (window.innerWidth >= 768) {
+                    desktopNav.style.display = 'flex';
+                    mobileNavBtn.style.display = 'none';
+                    document.getElementById('mobileNavMenu').style.display = 'none';
+                } else {
+                    desktopNav.style.display = 'none';
+                    mobileNavBtn.style.display = 'block';
+                }
+            }
+            function toggleMobileMenu() {
+                const menu = document.getElementById('mobileNavMenu');
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+            updateNav();
+            window.addEventListener('resize', updateNav);
+        </script>
+        
+        <div class="container">
+            <!-- ヘッダー -->
+            <div class="text-center mb-12">
+                <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #3b82f6;">
+                    <i class="fas fa-blog mr-3"></i>
+                    ブログ原稿作成
+                </h1>
+                <p class="text-lg text-gray-700">
+                    Wixにそのままコピペできる！AIがブログ原稿を自動生成✨
+                </p>
+            </div>
+            
+            <!-- 記事タイプ選択 -->
+            <div class="bg-white rounded-2xl p-8 shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-6 text-center" style="color: #3b82f6;">
+                    <i class="fas fa-file-alt mr-2"></i>記事タイプを選択
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button class="article-type-btn" data-type="introduction" onclick="selectArticleType('introduction')">
+                        <div class="text-4xl mb-3">📖</div>
+                        <div class="text-xl font-bold mb-2">紹介記事</div>
+                        <div class="text-sm text-gray-600">サービス説明・SEO記事</div>
+                        <div class="text-xs mt-2 text-gray-500">例: ミルクバスとは？</div>
+                    </button>
+                    <button class="article-type-btn" data-type="report" onclick="selectArticleType('report')">
+                        <div class="text-4xl mb-3">📝</div>
+                        <div class="text-xl font-bold mb-2">撮影レポート</div>
+                        <div class="text-sm text-gray-600">撮影の様子・お客様の声</div>
+                        <div class="text-xs mt-2 text-gray-500">例: 〇〇ちゃんの100日記念</div>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 入力フォーム -->
+            <div id="inputSection" class="hidden bg-white rounded-2xl p-8 shadow-lg mb-8">
+                <h2 class="text-2xl font-bold mb-6" style="color: #3b82f6;">
+                    <i class="fas fa-edit mr-2"></i>記事情報を入力
+                </h2>
+                
+                <div class="space-y-6">
+                    <!-- 撮影メニュー選択 -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-3 text-gray-800">
+                            📸 撮影メニュー
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="menuGrid">
+                            <!-- メニューボタンがここに表示されます -->
+                        </div>
+                    </div>
+                    
+                    <!-- タイトル -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-2 text-gray-800">
+                            📌 記事タイトル（オプション）
+                        </label>
+                        <input 
+                            type="text" 
+                            id="title"
+                            placeholder="空欄の場合は自動生成されます"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-400 focus:outline-none"
+                        />
+                        <p class="text-sm text-gray-500 mt-1">※空欄でOK！AIが自動で作成します</p>
+                    </div>
+                    
+                    <!-- キーワード -->
+                    <div id="keywordsField">
+                        <label class="block text-lg font-semibold mb-2 text-gray-800">
+                            🔍 SEOキーワード（オプション）
+                        </label>
+                        <input 
+                            type="text" 
+                            id="keywords"
+                            placeholder="例: ミルクバス, フォトスタジオ, 沖縄"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-400 focus:outline-none"
+                        />
+                    </div>
+                    
+                    <!-- 記事の要点 -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-2 text-gray-800">
+                            <span id="mainPointsLabel">📝 記事の要点・特徴</span>
+                        </label>
+                        <textarea 
+                            id="mainPoints" 
+                            rows="5"
+                            placeholder="例: サービスの魅力、お客様の反応、撮影エピソードなど"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-400 focus:outline-none"
+                        ></textarea>
+                        <p class="text-sm text-gray-500 mt-1">※簡単なメモでOK！AIが文章化します</p>
+                    </div>
+                    
+                    <!-- トーン -->
+                    <div>
+                        <label class="block text-lg font-semibold mb-3 text-gray-800">
+                            🎨 文章のトーン
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <label class="flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="tone" value="professional" checked class="w-5 h-5 text-blue-500">
+                                <span class="font-medium">プロフェッショナル</span>
+                            </label>
+                            <label class="flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="tone" value="friendly" class="w-5 h-5 text-blue-500">
+                                <span class="font-medium">親しみやすい</span>
+                            </label>
+                            <label class="flex items-center space-x-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="tone" value="casual" class="w-5 h-5 text-blue-500">
+                                <span class="font-medium">カジュアル</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 生成ボタン -->
+                    <div class="text-center pt-4">
+                        <button id="generateBtn" class="generate-btn">
+                            <i class="fas fa-magic mr-2"></i>ブログ原稿を生成する
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ローディング -->
+            <div id="loadingSection" class="hidden bg-white rounded-2xl p-12 shadow-lg mb-8 text-center">
+                <div class="spinner mb-6"></div>
+                <h3 class="text-2xl font-bold mb-2" style="color: #3b82f6;">
+                    AIがブログ原稿を作成中です...
+                </h3>
+                <p class="text-gray-600">少々お待ちください</p>
+            </div>
+            
+            <!-- 結果表示 -->
+            <div id="resultsSection" class="hidden">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold mb-2" style="color: #3b82f6;">
+                        <i class="fas fa-check-circle mr-2"></i>生成完了！
+                    </h2>
+                    <p class="text-gray-700">Wixエディタにそのままコピー＆ペーストできます</p>
+                </div>
+                
+                <div class="result-card">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-2xl font-bold" style="color: #3b82f6;">
+                                <i class="fas fa-file-alt mr-2"></i>ブログ原稿
+                            </h3>
+                            <span id="wordCount" class="text-lg font-semibold text-gray-600"></span>
+                        </div>
+                        
+                        <div id="articlePreview" class="article-preview"></div>
+                    </div>
+                    
+                    <button class="copy-btn" onclick="copyArticle()">
+                        <i class="fas fa-copy mr-2"></i>原稿をコピー
+                    </button>
+                    
+                    <div class="text-center mt-6">
+                        <button onclick="resetForm()" class="px-8 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold">
+                            <i class="fas fa-redo mr-2"></i>別の原稿を作成する
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/blog.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+/**
  * Instagram投稿文生成API
  */
 app.post('/api/instagram/generate', async (c) => {
@@ -2364,6 +2779,303 @@ ${servicesList}
     
   } catch (error: any) {
     console.error('Instagram generation error:', error);
+    return c.json({ error: error.message || 'Generation failed' }, 500);
+  }
+});
+
+/**
+ * ブログ記事生成API
+ */
+app.post('/api/blog/generate', async (c) => {
+  const { OPENAI_API_KEY } = c.env;
+  const { articleType, menu, title, keywords, mainPoints, tone } = await c.req.json();
+  
+  // メニューデータ
+  const MENU_DATA: Record<string, any> = {
+    '100day': {
+      name: '100日フォト',
+      description: '生後100日を記念する大切な節目の撮影',
+      features: [
+        '家族全員での記念撮影',
+        '兄弟姉妹も一緒に撮影可能',
+        '100枚以上の全データ納品',
+        '豊富な衣装から選び放題'
+      ]
+    },
+    'birthday': {
+      name: 'バースデーフォト',
+      description: '1歳の誕生日を祝う特別な記念撮影',
+      features: [
+        '家族写真込みのプラン',
+        '成長記録として残せる',
+        '全データ納品で思い出を保存',
+        'リピーター割引あり'
+      ]
+    },
+    'shichigosan': {
+      name: '七五三',
+      description: '伝統的な七五三の記念撮影',
+      features: [
+        'プロのヘアメイク付き',
+        '和装・洋装の両方で撮影',
+        '家族全員での記念写真',
+        '豊富な衣装ラインナップ'
+      ]
+    },
+    'milkbath': {
+      name: 'ミルクバス',
+      description: '幻想的で可愛らしいミルクバス撮影',
+      features: [
+        'バスローブ姿も撮影可能',
+        'ドレス姿での撮影込み',
+        '私服での撮影もOK',
+        '100枚以上の全データ納品'
+      ]
+    },
+    'halfbirthday': {
+      name: 'ハーフバースデー',
+      description: '生後6ヶ月の成長を記念する撮影',
+      features: [
+        '家族写真込み',
+        '寝返りやお座りの姿を記録',
+        '全データ納品（100枚保証）',
+        '豊富な衣装で変身'
+      ]
+    },
+    'family': {
+      name: 'ファミリーフォト',
+      description: '家族の絆を形に残す記念撮影',
+      features: [
+        '家族全員での撮影',
+        '兄弟姉妹の個別撮影も',
+        '自然な表情を引き出す撮影',
+        '全データ納品で思い出を共有'
+      ]
+    },
+    'smashcake': {
+      name: 'スマッシュケーキ',
+      description: '1歳のバースデーに人気のスマッシュケーキ撮影',
+      features: [
+        '合成着色料不使用の安心ケーキ',
+        '純正クリーム使用',
+        'アレルギー除去対応可能',
+        '家族写真とフォトフレーム付き'
+      ]
+    },
+    'ryuso': {
+      name: '琉装撮影',
+      description: '沖縄伝統の琉装での記念撮影',
+      features: [
+        '本格的な沖縄伝統衣装',
+        '100日〜6ヶ月サイズ対応',
+        '家族写真込み',
+        '貸切スタジオで安心撮影'
+      ]
+    }
+  };
+  
+  const menuData = MENU_DATA[menu];
+  if (!menuData) {
+    return c.json({ error: 'Invalid menu' }, 400);
+  }
+  
+  // マカロニスタジオの強み
+  const studioStrengths = `
+【マカロニスタジオの強み】
+・全データ納品：撮影した写真をすべてお渡し（100枚以上保証）
+・衣装着放題：豊富な衣装から何着でも選べる
+・家族写真込み：ご家族全員での記念撮影も含まれる
+・プロの技術：子ども撮影に特化したカメラマンが対応
+・リラックスできる空間：貸切スタジオで周りを気にせず撮影
+・沖縄県那覇市：アクセス便利な立地
+・リピーター割引：2回目以降はお得に撮影可能
+`;
+  
+  // 記事タイプ別のプロンプト
+  let prompt = '';
+  
+  if (articleType === 'introduction') {
+    // 紹介記事
+    prompt = `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」のブログライターです。
+以下の内容でWix用のブログ記事原稿（プレーンテキスト）を作成してください。
+
+【記事タイトル】
+${title || `${menuData.name}とは？マカロニスタジオが選ばれる理由`}
+
+【撮影メニュー】
+${menuData.name}：${menuData.description}
+
+【キーワード】
+${keywords || menuData.name + ', フォトスタジオ, 沖縄, 那覇, 子ども写真'}
+
+【記事の要点】
+${mainPoints || 'サービスの魅力とマカロニスタジオの特徴を紹介'}
+
+【マカロニスタジオのサービス】
+${menuData.features.map((f: string) => `・${f}`).join('\n')}
+
+${studioStrengths}
+
+【トーン】
+${tone || 'professional'}（professional=プロフェッショナル、friendly=親しみやすい、casual=カジュアル）
+
+【記事構成】
+1. 導入（100-150文字）
+   - サービスへの疑問や興味を引く
+   
+2. ${menuData.name}とは？（200-300文字）
+   - サービスの概要説明
+   - どんな撮影なのか
+   - なぜ人気なのか
+   
+3. マカロニスタジオの${menuData.name}の特徴（300-400文字）
+   - 当スタジオならではの強み
+   - サービス内容の詳細
+   - 他店との違い
+   
+4. 料金・サービス内容（200-250文字）
+   - 含まれるサービス
+   - データ納品について
+   - リピーター割引など
+   
+5. ご予約方法（100文字）
+   - 予約の流れ
+   - 連絡先情報
+
+【出力形式】
+Wixにそのままコピペできるプレーンテキスト形式で出力してください。
+見出しは「■」で始め、段落は空行で区切ってください。
+
+■ ${title || `${menuData.name}とは？マカロニスタジオが選ばれる理由`}
+
+[導入文]
+
+■ ${menuData.name}とは？
+
+[本文]
+
+■ マカロニスタジオの${menuData.name}の特徴
+
+[本文]
+
+■ 料金・サービス内容
+
+[本文]
+
+■ ご予約方法
+
+ご予約はホームページのお問い合わせフォーム、またはDM・公式LINEから承っております。
+お気軽にお問い合わせください。
+
+【注意事項】
+- HTMLタグは使わない
+- 自然で読みやすい文章
+- SEOを意識したキーワード配置
+- 文字数は合計800-1200文字程度
+- 温かく親しみやすい語り口`;
+    
+  } else {
+    // 撮影レポート
+    prompt = `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」のブログライターです。
+以下の内容でWix用の撮影レポート記事（プレーンテキスト）を作成してください。
+
+【記事タイトル】
+${title || `${menuData.name}撮影レポート`}
+
+【撮影メニュー】
+${menuData.name}
+
+【撮影の様子・エピソード】
+${mainPoints || '楽しく笑顔いっぱいの撮影でした'}
+
+【トーン】
+${tone || 'friendly'}（professional=プロフェッショナル、friendly=親しみやすい、casual=カジュアル）
+
+【記事構成】
+1. 導入（80-100文字）
+   - 撮影の紹介
+   
+2. 撮影の様子（300-400文字）
+   - お子様の様子
+   - 撮影中のエピソード
+   - 印象的なシーン
+   
+3. 撮影のポイント（200-250文字）
+   - 今回の撮影で工夫した点
+   - おすすめの撮り方
+   
+4. スタッフより（150-200文字）
+   - スタッフからの感想
+   - お客様へのメッセージ
+
+【出力形式】
+Wixにそのままコピペできるプレーンテキスト形式で出力してください。
+見出しは「■」で始め、段落は空行で区切ってください。
+
+■ ${title || `${menuData.name}撮影レポート`}
+
+[導入文]
+
+■ 撮影の様子
+
+[本文]
+
+■ 撮影のポイント
+
+[本文]
+
+■ スタッフより
+
+[本文]
+
+【注意事項】
+- HTMLタグは使わない
+- 具体的で臨場感のある表現
+- 文字数は合計600-900文字程度
+- 温かく親しみやすい語り口
+- 絵文字は使わない（Wix用）`;
+  }
+  
+  try {
+    // OpenAI API呼び出し
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'あなたはプロのブログライターです。SEOを意識しつつ、読みやすく魅力的な記事を作成します。Wixにそのままコピペできるプレーンテキスト形式で出力してください。'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`OpenAI API error: ${response.statusText} - ${errorData}`);
+    }
+    
+    const data = await response.json();
+    const article = data.choices[0].message.content;
+    
+    return c.json({
+      article: article,
+      wordCount: article.length
+    });
+    
+  } catch (error: any) {
+    console.error('Blog generation error:', error);
     return c.json({ error: error.message || 'Generation failed' }, 500);
   }
 });
