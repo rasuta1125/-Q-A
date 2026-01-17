@@ -789,6 +789,9 @@ app.get('/', (c) => {
                         <a href="/blog" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-blog mr-2"></i>ブログ原稿
                         </a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -818,6 +821,9 @@ app.get('/', (c) => {
                     </a>
                     <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-blog mr-2"></i>ブログ原稿
+                    </a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1019,6 +1025,9 @@ app.get('/admin', (c) => {
                         <a href="/blog" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-blog mr-2"></i>ブログ原稿
                         </a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1048,6 +1057,9 @@ app.get('/admin', (c) => {
                     </a>
                     <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-blog mr-2"></i>ブログ原稿
+                    </a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -1488,6 +1500,9 @@ app.get('/web-admin', (c) => {
                         <a href="/blog" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-blog mr-2"></i>ブログ原稿
                         </a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
+                        </a>
                         <a href="/templates" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-clipboard-list mr-2"></i>定型文
                         </a>
@@ -1517,6 +1532,9 @@ app.get('/web-admin', (c) => {
                     </a>
                     <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-blog mr-2"></i>ブログ原稿
+                    </a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
                     </a>
                     <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-clipboard-list mr-2"></i>定型文
@@ -2335,6 +2353,9 @@ app.get('/blog', (c) => {
                         <a href="/blog" style="color: #3b82f6; text-decoration: none; font-weight: 600;">
                             <i class="fas fa-blog" style="margin-right: 0.5rem;"></i>ブログ原稿
                         </a>
+                        <a href="/staff-board" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>スタッフ連絡板
+                        </a>
                         <a href="/templates" style="color: #374151; text-decoration: none;">
                             <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
                         </a>
@@ -2360,6 +2381,9 @@ app.get('/blog', (c) => {
                 </a>
                 <a href="/blog" style="display: block; padding: 0.75rem 1rem; color: #3b82f6; text-decoration: none; font-weight: 600; background: #dbeafe; border-radius: 0.375rem;">
                     <i class="fas fa-blog" style="margin-right: 0.5rem;"></i>ブログ原稿
+                </a>
+                <a href="/staff-board" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
+                    <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>スタッフ連絡板
                 </a>
                 <a href="/templates" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
                     <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
@@ -2573,6 +2597,203 @@ app.get('/blog', (c) => {
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/blog.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+// =====================================
+// スタッフ連絡掲示板ページ
+// =====================================
+app.get('/staff-board', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>スタッフ連絡掲示板 - マカロニスタジオ</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            .message-card {
+                transition: all 0.3s ease;
+                border-left: 4px solid #FFB6C1;
+            }
+            .message-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(255, 182, 193, 0.3);
+            }
+            .message-card.completed {
+                border-left-color: #9CA3AF;
+                opacity: 0.7;
+            }
+            .filter-btn.active {
+                background: linear-gradient(135deg, #FF69B4 0%, #FFB6C1 100%);
+                color: white;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <nav class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-camera text-3xl" style="color: #FF69B4;"></i>
+                        <h1 class="text-2xl font-bold" style="color: #FF69B4;">マカロニスタジオ</h1>
+                    </div>
+                    
+                    <!-- デスクトップメニュー -->
+                    <div class="hidden md:flex space-x-6">
+                        <a href="/" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fas fa-comments mr-2"></i>回答生成
+                        </a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>定型文
+                        </a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
+                        </a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fas fa-blog mr-2"></i>ブログ原稿
+                        </a>
+                        <a href="/staff-board" class="text-pink-500 font-semibold flex items-center">
+                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
+                        </a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fas fa-cog mr-2"></i>Q&A管理
+                        </a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fas fa-globe mr-2"></i>Web管理
+                        </a>
+                    </div>
+                    
+                    <!-- モバイルメニューボタン -->
+                    <button id="mobileMenuBtn" class="md:hidden text-gray-700">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+                
+                <!-- モバイルメニュー -->
+                <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                    <a href="/" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-comments mr-2"></i>回答生成</a>
+                    <a href="/templates" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                    <a href="/instagram" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
+                    <a href="/blog" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
+                    <a href="/staff-board" class="block py-2 text-pink-500 font-semibold"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
+                    <a href="/admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                    <a href="/web-admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                </div>
+            </nav>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <div class="container mx-auto px-4 py-8 max-w-5xl">
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold mb-2" style="color: #FF69B4;">
+                    <i class="fas fa-clipboard-list mr-3"></i>スタッフ連絡掲示板
+                </h2>
+                <p class="text-gray-600">スタッフ間の連絡事項を管理します</p>
+            </div>
+
+            <!-- 新規連絡事項フォーム -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                <h3 class="text-xl font-bold mb-4 flex items-center" style="color: #3b82f6;">
+                    <i class="fas fa-plus-circle mr-2"></i>新規連絡事項を追加
+                </h3>
+                
+                <form id="addMessageForm" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                スタッフ名 <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="staffName" 
+                                required
+                                placeholder="例: 山田 太郎"
+                                class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                日付 <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="date" 
+                                id="messageDate" 
+                                required
+                                class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
+                            />
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            連絡内容 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea 
+                            id="messageContent" 
+                            required
+                            rows="4"
+                            placeholder="連絡事項を入力してください"
+                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none resize-vertical"
+                        ></textarea>
+                    </div>
+                    
+                    <button 
+                        type="submit"
+                        class="w-full py-3 text-white font-bold rounded-lg transition"
+                        style="background: linear-gradient(135deg, #FF69B4 0%, #FFB6C1 100%);"
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(255, 105, 180, 0.4)'"
+                        onmouseout="this.style.transform=''; this.style.boxShadow=''"
+                    >
+                        <i class="fas fa-paper-plane mr-2"></i>連絡事項を追加
+                    </button>
+                </form>
+            </div>
+
+            <!-- フィルターボタン -->
+            <div class="flex flex-wrap gap-3 mb-6">
+                <button onclick="filterMessages('all')" class="filter-btn active px-6 py-2 rounded-full font-semibold transition border-2 border-pink-300">
+                    <i class="fas fa-list mr-2"></i>すべて
+                </button>
+                <button onclick="filterMessages('pending')" class="filter-btn px-6 py-2 rounded-full font-semibold transition border-2 border-pink-300">
+                    <i class="fas fa-clock mr-2"></i>未対応
+                </button>
+                <button onclick="filterMessages('completed')" class="filter-btn px-6 py-2 rounded-full font-semibold transition border-2 border-pink-300">
+                    <i class="fas fa-check-circle mr-2"></i>対応済み
+                </button>
+            </div>
+
+            <!-- 連絡事項リスト -->
+            <div id="messagesList" class="space-y-4">
+                <!-- ここに連絡事項が表示されます -->
+            </div>
+
+            <!-- ローディング表示 -->
+            <div id="loading" class="hidden text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-pink-400 border-t-transparent"></div>
+                <p class="mt-4 text-gray-600">読み込み中...</p>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/staff-board.js"></script>
+        
+        <script>
+            // モバイルメニュートグル
+            document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+                const menu = document.getElementById('mobileMenu');
+                menu.classList.toggle('hidden');
+            });
+            
+            // 日付フィールドに今日の日付を設定
+            document.getElementById('messageDate').valueAsDate = new Date();
+        </script>
     </body>
     </html>
   `);
@@ -3130,6 +3351,108 @@ Wixにそのままコピペできるプレーンテキスト形式で出力し�
   } catch (error: any) {
     console.error('Blog generation error:', error);
     return c.json({ error: error.message || 'Generation failed' }, 500);
+  }
+});
+
+// =====================================
+// スタッフ連絡掲示板 API
+// =====================================
+
+// スタッフ連絡一覧取得
+app.get('/api/staff-messages', async (c) => {
+  try {
+    const db = c.env.DB;
+    const { status } = c.req.query();
+    
+    let query = 'SELECT * FROM staff_messages';
+    let params: any[] = [];
+    
+    // ステータスフィルター（未対応/対応済み）
+    if (status === 'pending') {
+      query += ' WHERE is_completed = 0';
+    } else if (status === 'completed') {
+      query += ' WHERE is_completed = 1';
+    }
+    
+    query += ' ORDER BY message_date DESC, created_at DESC';
+    
+    const result = await db.prepare(query).bind(...params).all();
+    return c.json({ messages: result.results || [] });
+  } catch (error: any) {
+    console.error('Failed to fetch staff messages:', error);
+    return c.json({ error: 'Failed to fetch messages' }, 500);
+  }
+});
+
+// 新規連絡事項を追加
+app.post('/api/staff-messages', async (c) => {
+  try {
+    const db = c.env.DB;
+    const { staff_name, message_date, content } = await c.req.json();
+    
+    // バリデーション
+    if (!staff_name || !message_date || !content) {
+      return c.json({ error: 'スタッフ名、日付、内容は必須です' }, 400);
+    }
+    
+    const result = await db.prepare(
+      `INSERT INTO staff_messages (staff_name, message_date, content, is_completed)
+       VALUES (?, ?, ?, 0)`
+    ).bind(staff_name, message_date, content).run();
+    
+    return c.json({ 
+      success: true, 
+      id: result.meta.last_row_id,
+      message: '連絡事項を追加しました'
+    });
+  } catch (error: any) {
+    console.error('Failed to add staff message:', error);
+    return c.json({ error: 'Failed to add message' }, 500);
+  }
+});
+
+// 対応済みステータスを更新
+app.put('/api/staff-messages/:id', async (c) => {
+  try {
+    const db = c.env.DB;
+    const id = c.req.param('id');
+    const { is_completed } = await c.req.json();
+    
+    const completed_at = is_completed ? new Date().toISOString() : null;
+    
+    await db.prepare(
+      `UPDATE staff_messages 
+       SET is_completed = ?, 
+           completed_at = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`
+    ).bind(is_completed, completed_at, id).run();
+    
+    return c.json({ 
+      success: true,
+      message: is_completed ? '対応済みにしました' : '未対応に戻しました'
+    });
+  } catch (error: any) {
+    console.error('Failed to update staff message:', error);
+    return c.json({ error: 'Failed to update message' }, 500);
+  }
+});
+
+// 連絡事項を削除
+app.delete('/api/staff-messages/:id', async (c) => {
+  try {
+    const db = c.env.DB;
+    const id = c.req.param('id');
+    
+    await db.prepare('DELETE FROM staff_messages WHERE id = ?').bind(id).run();
+    
+    return c.json({ 
+      success: true,
+      message: '連絡事項を削除しました'
+    });
+  } catch (error: any) {
+    console.error('Failed to delete staff message:', error);
+    return c.json({ error: 'Failed to delete message' }, 500);
   }
 });
 
