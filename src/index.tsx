@@ -2632,6 +2632,19 @@ app.get('/staff-board', (c) => {
                 background: linear-gradient(135deg, #FF69B4 0%, #FFB6C1 100%);
                 color: white;
             }
+            .staff-tab {
+                transition: all 0.2s ease;
+            }
+            .staff-tab.selected {
+                background: linear-gradient(135deg, #FF69B4 0%, #FFB6C1 100%);
+                color: white;
+                border-color: #FF69B4;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(255, 105, 180, 0.3);
+            }
+            .staff-tab:hover {
+                transform: translateY(-1px);
+            }
         </style>
     </head>
     <body class="bg-gray-50">
@@ -2704,20 +2717,35 @@ app.get('/staff-board', (c) => {
                 </h3>
                 
                 <form id="addMessageForm" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                スタッフ名 <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                id="staffName" 
-                                required
-                                placeholder="例: 山田 太郎"
-                                class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
-                            />
+                    <!-- スタッフ名タブ -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            スタッフ名を選択 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="hidden" id="staffName" required />
+                        <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+                            <button type="button" onclick="selectStaff('坂口')" class="staff-tab px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-pink-400 transition font-semibold text-sm" data-staff="坂口">
+                                坂口
+                            </button>
+                            <button type="button" onclick="selectStaff('小百合')" class="staff-tab px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-pink-400 transition font-semibold text-sm" data-staff="小百合">
+                                小百合
+                            </button>
+                            <button type="button" onclick="selectStaff('史弥')" class="staff-tab px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-pink-400 transition font-semibold text-sm" data-staff="史弥">
+                                史弥
+                            </button>
+                            <button type="button" onclick="selectStaff('秋吉')" class="staff-tab px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-pink-400 transition font-semibold text-sm" data-staff="秋吉">
+                                秋吉
+                            </button>
+                            <button type="button" onclick="selectStaff('響')" class="staff-tab px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-pink-400 transition font-semibold text-sm" data-staff="響">
+                                響
+                            </button>
+                            <button type="button" onclick="selectStaff('みれい')" class="staff-tab px-4 py-3 rounded-lg border-2 border-gray-300 hover:border-pink-400 transition font-semibold text-sm" data-staff="みれい">
+                                みれい
+                            </button>
                         </div>
-                        
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 日付 <span class="text-red-500">*</span>

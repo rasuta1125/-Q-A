@@ -2,6 +2,21 @@
 
 let currentFilter = 'all';
 let allMessages = [];
+let selectedStaff = '';
+
+// スタッフを選択
+function selectStaff(staffName) {
+    selectedStaff = staffName;
+    document.getElementById('staffName').value = staffName;
+    
+    // すべてのタブから選択状態を解除
+    document.querySelectorAll('.staff-tab').forEach(tab => {
+        tab.classList.remove('selected');
+    });
+    
+    // クリックされたタブを選択状態にする
+    event.target.classList.add('selected');
+}
 
 // ページ読み込み時に連絡事項を取得
 document.addEventListener('DOMContentLoaded', () => {
@@ -132,7 +147,11 @@ async function addMessage() {
     const content = document.getElementById('messageContent').value;
     
     if (!staffName || !messageDate || !content) {
-        alert('すべての項目を入力してください');
+        if (!staffName) {
+            showNotification('スタッフ名を選択してください', 'error');
+        } else {
+            showNotification('すべての項目を入力してください', 'error');
+        }
         return;
     }
     
@@ -147,6 +166,12 @@ async function addMessage() {
             // フォームをリセット
             document.getElementById('addMessageForm').reset();
             document.getElementById('messageDate').valueAsDate = new Date();
+            
+            // スタッフタブの選択状態をリセット
+            selectedStaff = '';
+            document.querySelectorAll('.staff-tab').forEach(tab => {
+                tab.classList.remove('selected');
+            });
             
             // 成功メッセージ
             showNotification('連絡事項を追加しました', 'success');
