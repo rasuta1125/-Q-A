@@ -4,8 +4,8 @@ let currentFilter = 'all';
 let allMessages = [];
 let selectedStaff = '';
 
-// スタッフを選択
-function selectStaff(staffName) {
+// スタッフを選択（グローバル関数として定義）
+window.selectStaff = function(staffName) {
     selectedStaff = staffName;
     document.getElementById('staffName').value = staffName;
     
@@ -15,8 +15,12 @@ function selectStaff(staffName) {
     });
     
     // クリックされたタブを選択状態にする
-    event.target.classList.add('selected');
-}
+    // data-staff属性でスタッフ名が一致するボタンを選択
+    const targetButton = document.querySelector(`.staff-tab[data-staff="${staffName}"]`);
+    if (targetButton) {
+        targetButton.classList.add('selected');
+    }
+};
 
 // ページ読み込み時に連絡事項を取得
 document.addEventListener('DOMContentLoaded', () => {
@@ -185,8 +189,8 @@ async function addMessage() {
     }
 }
 
-// 対応ステータスを切り替え
-async function toggleStatus(id, isCompleted) {
+// 対応ステータスを切り替え（グローバル関数として定義）
+window.toggleStatus = async function(id, isCompleted) {
     try {
         const response = await axios.put(`/api/staff-messages/${id}`, {
             is_completed: isCompleted
@@ -200,10 +204,10 @@ async function toggleStatus(id, isCompleted) {
         console.error('Failed to toggle status:', error);
         showNotification('ステータスの更新に失敗しました', 'error');
     }
-}
+};
 
-// 連絡事項を削除
-async function deleteMessage(id) {
+// 連絡事項を削除（グローバル関数として定義）
+window.deleteMessage = async function(id) {
     if (!confirm('この連絡事項を削除してもよろしいですか？')) {
         return;
     }
@@ -219,21 +223,26 @@ async function deleteMessage(id) {
         console.error('Failed to delete message:', error);
         showNotification('連絡事項の削除に失敗しました', 'error');
     }
-}
+};
 
-// フィルター切り替え
-function filterMessages(filter) {
+// フィルター切り替え（グローバル関数として定義）
+window.filterMessages = function(filter) {
     currentFilter = filter;
     
     // アクティブなボタンを更新
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+    
+    // クリックされたボタンをアクティブにする
+    const targetButton = event ? event.target : document.querySelector('.filter-btn');
+    if (targetButton) {
+        targetButton.classList.add('active');
+    }
     
     // メッセージを再読み込み
     loadMessages(filter);
-}
+};
 
 // 通知を表示
 function showNotification(message, type = 'success') {
