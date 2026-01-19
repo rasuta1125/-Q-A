@@ -31,6 +31,24 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         await addMessage();
     });
+    
+    // 画像プレビュー
+    const imageInput = document.getElementById('messageImage');
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('previewImg').src = event.target.result;
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('imagePreview').classList.add('hidden');
+            }
+        });
+    }
 });
 
 // 連絡事項を読み込む
@@ -91,8 +109,15 @@ function createMessageCard(message) {
     const date = new Date(message.message_date);
     const formattedDate = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
     
+    // 画像があれば表示
+    const imageHtml = message.image_url ? `
+        <div class="mb-4">
+            <img src="${escapeHtml(message.image_url)}" alt="添付画像" class="max-w-md rounded-lg shadow-md" />
+        </div>
+    ` : '';
+    
     return `
-        <div class="message-card ${isCompleted ? 'completed' : ''} bg-white rounded-xl shadow-md p-6">
+        <div class="message-card ${isCompleted ? 'completed' : ''} bg-white rounded-xl shadow-md p-6" data-message-id="${message.id}">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div class="flex items-center gap-4 mb-3 md:mb-0">
                     <div class="flex items-center gap-2">
@@ -113,11 +138,48 @@ function createMessageCard(message) {
                 </div>
             </div>
             
-            <div class="mb-4">
+            <div class="mb-4" id="content-${message.id}">
                 <p class="text-gray-700 whitespace-pre-wrap">${escapeHtml(message.content)}</p>
             </div>
             
+            <div class="mb-4 hidden" id="edit-${message.id}">
+                <textarea 
+                    id="edit-content-${message.id}" 
+                    class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none resize-vertical"
+                    rows="4"
+                >${escapeHtml(message.content)}</textarea>
+                <input 
+                    type="file" 
+                    id="edit-image-${message.id}" 
+                    accept="image/*"
+                    class="mt-2 w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
+                />
+            </div>
+            
+            ${imageHtml}
+            
             <div class="flex flex-wrap gap-3 justify-end">
+                <button 
+                    id="edit-btn-${message.id}"
+                    onclick="startEdit(${message.id})"
+                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-semibold text-sm"
+                >
+                    <i class="fas fa-edit mr-1"></i>編集
+                </button>
+                <button 
+                    id="save-btn-${message.id}"
+                    onclick="saveEdit(${message.id})"
+                    class="hidden px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold text-sm"
+                >
+                    <i class="fas fa-save mr-1"></i>保存
+                </button>
+                <button 
+                    id="cancel-btn-${message.id}"
+                    onclick="cancelEdit(${message.id})"
+                    class="hidden px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition font-semibold text-sm"
+                >
+                    <i class="fas fa-times mr-1"></i>キャンセル
+                </button>
                 ${!isCompleted ? `
                     <button 
                         onclick="toggleStatus(${message.id}, 1)"
@@ -149,6 +211,7 @@ async function addMessage() {
     const staffName = document.getElementById('staffName').value;
     const messageDate = document.getElementById('messageDate').value;
     const content = document.getElementById('messageContent').value;
+    const imageFile = document.getElementById('messageImage').files[0];
     
     if (!staffName || !messageDate || !content) {
         if (!staffName) {
@@ -160,16 +223,25 @@ async function addMessage() {
     }
     
     try {
+        let image_url = null;
+        
+        // 画像がある場合はBase64に変換
+        if (imageFile) {
+            image_url = await convertToBase64(imageFile);
+        }
+        
         const response = await axios.post('/api/staff-messages', {
             staff_name: staffName,
             message_date: messageDate,
-            content: content
+            content: content,
+            image_url: image_url
         });
         
         if (response.data.success) {
             // フォームをリセット
             document.getElementById('addMessageForm').reset();
             document.getElementById('messageDate').valueAsDate = new Date();
+            document.getElementById('imagePreview').classList.add('hidden');
             
             // スタッフタブの選択状態をリセット
             selectedStaff = '';
@@ -187,6 +259,16 @@ async function addMessage() {
         console.error('Failed to add message:', error);
         showNotification('連絡事項の追加に失敗しました', 'error');
     }
+}
+
+// ファイルをBase64に変換
+function convertToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
 }
 
 // 対応ステータスを切り替え（グローバル関数として定義）
@@ -270,3 +352,52 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// 編集モードを開始（グローバル関数として定義）
+window.startEdit = function(id) {
+    document.getElementById(`content-${id}`).classList.add('hidden');
+    document.getElementById(`edit-${id}`).classList.remove('hidden');
+    document.getElementById(`edit-btn-${id}`).classList.add('hidden');
+    document.getElementById(`save-btn-${id}`).classList.remove('hidden');
+    document.getElementById(`cancel-btn-${id}`).classList.remove('hidden');
+};
+
+// 編集をキャンセル（グローバル関数として定義）
+window.cancelEdit = function(id) {
+    document.getElementById(`content-${id}`).classList.remove('hidden');
+    document.getElementById(`edit-${id}`).classList.add('hidden');
+    document.getElementById(`edit-btn-${id}`).classList.remove('hidden');
+    document.getElementById(`save-btn-${id}`).classList.add('hidden');
+    document.getElementById(`cancel-btn-${id}`).classList.add('hidden');
+};
+
+// 編集を保存（グローバル関数として定義）
+window.saveEdit = async function(id) {
+    const content = document.getElementById(`edit-content-${id}`).value;
+    const imageFile = document.getElementById(`edit-image-${id}`).files[0];
+    
+    if (!content.trim()) {
+        showNotification('連絡内容を入力してください', 'error');
+        return;
+    }
+    
+    try {
+        const updateData = { content };
+        
+        // 画像がある場合は追加
+        if (imageFile) {
+            updateData.image_url = await convertToBase64(imageFile);
+        }
+        
+        const response = await axios.put(`/api/staff-messages/${id}`, updateData);
+        
+        if (response.data.success) {
+            showNotification('メモを更新しました', 'success');
+            await loadMessages(currentFilter);
+        }
+    } catch (error) {
+        console.error('Failed to update message:', error);
+        showNotification('メモの更新に失敗しました', 'error');
+    }
+};
+

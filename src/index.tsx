@@ -2772,6 +2772,22 @@ app.get('/staff-board', (c) => {
                         ></textarea>
                     </div>
                     
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            画像 <span class="text-gray-500 text-xs">(任意)</span>
+                        </label>
+                        <input 
+                            type="file" 
+                            id="messageImage" 
+                            accept="image/*"
+                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">JPG, PNG, GIF形式の画像をアップロードできます</p>
+                        <div id="imagePreview" class="mt-2 hidden">
+                            <img id="previewImg" class="max-w-xs rounded-lg shadow-md" />
+                        </div>
+                    </div>
+                    
                     <button 
                         type="submit"
                         class="w-full py-3 text-white font-bold rounded-lg transition"
@@ -3416,7 +3432,7 @@ app.get('/api/staff-messages', async (c) => {
 app.post('/api/staff-messages', async (c) => {
   try {
     const db = c.env.DB;
-    const { staff_name, message_date, content } = await c.req.json();
+    const { staff_name, message_date, content, image_url } = await c.req.json();
     
     // バリデーション
     if (!staff_name || !message_date || !content) {
@@ -3424,9 +3440,9 @@ app.post('/api/staff-messages', async (c) => {
     }
     
     const result = await db.prepare(
-      `INSERT INTO staff_messages (staff_name, message_date, content, is_completed)
-       VALUES (?, ?, ?, 0)`
-    ).bind(staff_name, message_date, content).run();
+      `INSERT INTO staff_messages (staff_name, message_date, content, image_url, is_completed)
+       VALUES (?, ?, ?, ?, 0)`
+    ).bind(staff_name, message_date, content, image_url || null).run();
     
     return c.json({ 
       success: true, 
@@ -3444,22 +3460,55 @@ app.put('/api/staff-messages/:id', async (c) => {
   try {
     const db = c.env.DB;
     const id = c.req.param('id');
-    const { is_completed } = await c.req.json();
+    const body = await c.req.json();
     
-    const completed_at = is_completed ? new Date().toISOString() : null;
+    // ステータス更新のみの場合
+    if (body.is_completed !== undefined && !body.content && !body.image_url) {
+      const completed_at = body.is_completed ? new Date().toISOString() : null;
+      
+      await db.prepare(
+        `UPDATE staff_messages 
+         SET is_completed = ?, 
+             completed_at = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`
+      ).bind(body.is_completed, completed_at, id).run();
+      
+      return c.json({ 
+        success: true,
+        message: body.is_completed ? '対応済みにしました' : '未対応に戻しました'
+      });
+    }
     
-    await db.prepare(
-      `UPDATE staff_messages 
-       SET is_completed = ?, 
-           completed_at = ?,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`
-    ).bind(is_completed, completed_at, id).run();
+    // メモ内容や画像の更新
+    const { content, image_url } = body;
     
-    return c.json({ 
-      success: true,
-      message: is_completed ? '対応済みにしました' : '未対応に戻しました'
-    });
+    if (content !== undefined || image_url !== undefined) {
+      let updateQuery = 'UPDATE staff_messages SET updated_at = CURRENT_TIMESTAMP';
+      const params: any[] = [];
+      
+      if (content !== undefined) {
+        updateQuery += ', content = ?';
+        params.push(content);
+      }
+      
+      if (image_url !== undefined) {
+        updateQuery += ', image_url = ?';
+        params.push(image_url);
+      }
+      
+      updateQuery += ' WHERE id = ?';
+      params.push(id);
+      
+      await db.prepare(updateQuery).bind(...params).run();
+      
+      return c.json({ 
+        success: true,
+        message: 'メモを更新しました'
+      });
+    }
+    
+    return c.json({ error: '更新する内容がありません' }, 400);
   } catch (error: any) {
     console.error('Failed to update staff message:', error);
     return c.json({ error: 'Failed to update message' }, 500);
