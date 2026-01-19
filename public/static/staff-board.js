@@ -211,6 +211,7 @@ async function addMessage() {
     const staffName = document.getElementById('staffName').value;
     const messageDate = document.getElementById('messageDate').value;
     const content = document.getElementById('messageContent').value;
+    const imageUrl = document.getElementById('imageUrl').value;
     const imageFile = document.getElementById('messageImage').files[0];
     
     if (!staffName || !messageDate || !content) {
@@ -225,8 +226,17 @@ async function addMessage() {
     try {
         let image_url = null;
         
-        // 画像がある場合はBase64に変換
-        if (imageFile) {
+        // URL入力がある場合はそれを使用
+        if (imageUrl && imageUrl.trim()) {
+            image_url = imageUrl.trim();
+        }
+        // ファイルがある場合はBase64に変換（サイズチェック）
+        else if (imageFile) {
+            // ファイルサイズチェック（500KB = 512000バイト）
+            if (imageFile.size > 512000) {
+                showNotification('画像ファイルは500KB以下にしてください', 'error');
+                return;
+            }
             image_url = await convertToBase64(imageFile);
         }
         
@@ -384,8 +394,12 @@ window.saveEdit = async function(id) {
     try {
         const updateData = { content };
         
-        // 画像がある場合は追加
+        // 画像がある場合は追加（サイズチェック）
         if (imageFile) {
+            if (imageFile.size > 512000) {
+                showNotification('画像ファイルは500KB以下にしてください', 'error');
+                return;
+            }
             updateData.image_url = await convertToBase64(imageFile);
         }
         
