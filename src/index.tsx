@@ -2794,7 +2794,7 @@ app.get('/staff-board', (c) => {
                             accept="image/*"
                             class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
                         />
-                        <p class="text-xs text-gray-500 mt-1">⚠️ ファイルは500KB以下を推奨（JPG, PNG, GIF）</p>
+                        <p class="text-xs text-gray-500 mt-1">⚠️ ファイルは5MB以下（JPG, PNG, GIF）</p>
                         <div id="imagePreview" class="mt-2 hidden">
                             <img id="previewImg" class="max-w-xs rounded-lg shadow-md" />
                         </div>

@@ -230,13 +230,15 @@ async function addMessage() {
         if (imageUrl && imageUrl.trim()) {
             image_url = imageUrl.trim();
         }
-        // ファイルがある場合はBase64に変換（サイズチェック）
+        // ファイルがある場合はBase64に変換（サイズチェック: 5MB = 5242880バイト）
         else if (imageFile) {
-            // ファイルサイズチェック（500KB = 512000バイト）
-            if (imageFile.size > 512000) {
-                showNotification('画像ファイルは500KB以下にしてください', 'error');
+            if (imageFile.size > 5242880) {
+                showNotification('画像ファイルは5MB以下にしてください', 'error');
                 return;
             }
+            
+            // ローディング表示
+            showNotification('画像をアップロード中...', 'info');
             image_url = await convertToBase64(imageFile);
         }
         
@@ -267,7 +269,11 @@ async function addMessage() {
         }
     } catch (error) {
         console.error('Failed to add message:', error);
-        showNotification('連絡事項の追加に失敗しました', 'error');
+        if (error.response && error.response.status === 413) {
+            showNotification('画像ファイルが大きすぎます。5MB以下にしてください', 'error');
+        } else {
+            showNotification('連絡事項の追加に失敗しました', 'error');
+        }
     }
 }
 
@@ -394,10 +400,10 @@ window.saveEdit = async function(id) {
     try {
         const updateData = { content };
         
-        // 画像がある場合は追加（サイズチェック）
+        // 画像がある場合は追加（サイズチェック: 5MB = 5242880バイト）
         if (imageFile) {
-            if (imageFile.size > 512000) {
-                showNotification('画像ファイルは500KB以下にしてください', 'error');
+            if (imageFile.size > 5242880) {
+                showNotification('画像ファイルは5MB以下にしてください', 'error');
                 return;
             }
             updateData.image_url = await convertToBase64(imageFile);
