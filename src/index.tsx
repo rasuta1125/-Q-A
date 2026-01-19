@@ -2777,16 +2777,6 @@ app.get('/staff-board', (c) => {
                             画像 <span class="text-gray-500 text-xs">(任意)</span>
                         </label>
                         
-                        <!-- 画像URL入力 -->
-                        <input 
-                            type="url" 
-                            id="imageUrl" 
-                            placeholder="画像URLを入力（例: https://example.com/image.jpg）"
-                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none mb-2"
-                        />
-                        
-                        <p class="text-xs text-gray-500 mb-2">または</p>
-                        
                         <!-- ファイルアップロード -->
                         <input 
                             type="file" 
@@ -2794,7 +2784,7 @@ app.get('/staff-board', (c) => {
                             accept="image/*"
                             class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
                         />
-                        <p class="text-xs text-gray-500 mt-1">⚠️ ファイルは5MB以下（JPG, PNG, GIF）</p>
+                        <p class="text-xs text-gray-500 mt-1">📷 画像を選択（JPG, PNG, GIF対応、最大10MB）</p>
                         <div id="imagePreview" class="mt-2 hidden">
                             <img id="previewImg" class="max-w-xs rounded-lg shadow-md" />
                         </div>
@@ -3437,6 +3427,74 @@ app.get('/api/staff-messages', async (c) => {
   } catch (error: any) {
     console.error('Failed to fetch staff messages:', error);
     return c.json({ error: 'Failed to fetch messages' }, 500);
+  }
+});
+
+// 画像アップロード
+app.post('/api/upload-image', async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get('image') as File;
+    
+    if (!file) {
+      return c.json({ error: '画像ファイルが必要です' }, 400);
+    }
+    
+    // ファイルサイズチェック (10MB制限)
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE) {
+      return c.json({ error: '画像ファイルは10MB以下にしてください' }, 400);
+    }
+    
+    // ファイル名生成（重複を避けるためタイムスタンプ＋ランダム値を使用）
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8);
+    const extension = file.name.split('.').pop() || 'jpg';
+    const fileName = `staff-${timestamp}-${randomStr}.${extension}`;
+    
+    // R2バケットに保存
+    const arrayBuffer = await file.arrayBuffer();
+    await c.env.IMAGES.put(fileName, arrayBuffer, {
+      httpMetadata: {
+        contentType: file.type,
+      },
+    });
+    
+    // 公開URLを返す（本番環境ではR2のカスタムドメインを使用）
+    const imageUrl = `/api/images/${fileName}`;
+    
+    return c.json({ 
+      success: true,
+      imageUrl: imageUrl,
+      message: '画像をアップロードしました'
+    });
+  } catch (error: any) {
+    console.error('Failed to upload image:', error);
+    return c.json({ error: '画像のアップロードに失敗しました' }, 500);
+  }
+});
+
+// 画像取得
+app.get('/api/images/:fileName', async (c) => {
+  try {
+    const fileName = c.req.param('fileName');
+    const object = await c.env.IMAGES.get(fileName);
+    
+    if (!object) {
+      return c.json({ error: '画像が見つかりません' }, 404);
+    }
+    
+    const headers = new Headers();
+    object.writeHttpMetadata(headers);
+    headers.set('etag', object.httpEtag);
+    headers.set('Cache-Control', 'public, max-age=31536000'); // 1年間キャッシュ
+    
+    return new Response(object.body, {
+      headers,
+    });
+  } catch (error: any) {
+    console.error('Failed to get image:', error);
+    return c.json({ error: '画像の取得に失敗しました' }, 500);
   }
 });
 

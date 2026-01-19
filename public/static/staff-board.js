@@ -211,7 +211,6 @@ async function addMessage() {
     const staffName = document.getElementById('staffName').value;
     const messageDate = document.getElementById('messageDate').value;
     const content = document.getElementById('messageContent').value;
-    const imageUrl = document.getElementById('imageUrl').value;
     const imageFile = document.getElementById('messageImage').files[0];
     
     if (!staffName || !messageDate || !content) {
@@ -226,20 +225,31 @@ async function addMessage() {
     try {
         let image_url = null;
         
-        // URL入力がある場合はそれを使用
-        if (imageUrl && imageUrl.trim()) {
-            image_url = imageUrl.trim();
-        }
-        // ファイルがある場合はBase64に変換（サイズチェック: 5MB = 5242880バイト）
-        else if (imageFile) {
-            if (imageFile.size > 5242880) {
-                showNotification('画像ファイルは5MB以下にしてください', 'error');
+        // ファイルがある場合はR2にアップロード（サイズチェック: 10MB = 10485760バイト）
+        if (imageFile) {
+            if (imageFile.size > 10485760) {
+                showNotification('画像ファイルは10MB以下にしてください', 'error');
                 return;
             }
             
             // ローディング表示
             showNotification('画像をアップロード中...', 'info');
-            image_url = await convertToBase64(imageFile);
+            
+            // R2にアップロード
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            
+            const uploadResponse = await axios.post('/api/upload-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            if (uploadResponse.data.success) {
+                image_url = uploadResponse.data.imageUrl;
+            } else {
+                throw new Error('画像のアップロードに失敗しました');
+            }
         }
         
         const response = await axios.post('/api/staff-messages', {
@@ -270,21 +280,11 @@ async function addMessage() {
     } catch (error) {
         console.error('Failed to add message:', error);
         if (error.response && error.response.status === 413) {
-            showNotification('画像ファイルが大きすぎます。5MB以下にしてください', 'error');
+            showNotification('画像ファイルが大きすぎます。10MB以下にしてください', 'error');
         } else {
             showNotification('連絡事項の追加に失敗しました', 'error');
         }
     }
-}
-
-// ファイルをBase64に変換
-function convertToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
 }
 
 // 対応ステータスを切り替え（グローバル関数として定義）
@@ -400,13 +400,30 @@ window.saveEdit = async function(id) {
     try {
         const updateData = { content };
         
-        // 画像がある場合は追加（サイズチェック: 5MB = 5242880バイト）
+        // 画像がある場合はR2にアップロード（サイズチェック: 10MB = 10485760バイト）
         if (imageFile) {
-            if (imageFile.size > 5242880) {
-                showNotification('画像ファイルは5MB以下にしてください', 'error');
+            if (imageFile.size > 10485760) {
+                showNotification('画像ファイルは10MB以下にしてください', 'error');
                 return;
             }
-            updateData.image_url = await convertToBase64(imageFile);
+            
+            showNotification('画像をアップロード中...', 'info');
+            
+            // R2にアップロード
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            
+            const uploadResponse = await axios.post('/api/upload-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            
+            if (uploadResponse.data.success) {
+                updateData.image_url = uploadResponse.data.imageUrl;
+            } else {
+                throw new Error('画像のアップロードに失敗しました');
+            }
         }
         
         const response = await axios.put(`/api/staff-messages/${id}`, updateData);

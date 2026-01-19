@@ -12,5 +12,11 @@
       "database_name": "macaroni-qa-db",
       "database_id": "4a50fae9-cbf0-4a2e-8738-1559cd8cbbb4"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "macaroni-staff-images"
+    }
   ]
 }
