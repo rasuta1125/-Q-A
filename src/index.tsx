@@ -3591,7 +3591,28 @@ app.delete('/api/staff-messages/:id', async (c) => {
     const db = c.env.DB;
     const id = c.req.param('id');
     
+    // 削除前に画像URLを取得
+    const message = await db.prepare(
+      'SELECT image_url FROM staff_messages WHERE id = ?'
+    ).bind(id).first();
+    
+    // メッセージを削除
     await db.prepare('DELETE FROM staff_messages WHERE id = ?').bind(id).run();
+    
+    // R2の画像も削除（image_urlが存在し、/api/images/で始まる場合）
+    if (message && message.image_url && typeof message.image_url === 'string') {
+      const imageUrl = message.image_url as string;
+      if (imageUrl.startsWith('/api/images/')) {
+        const fileName = imageUrl.replace('/api/images/', '');
+        try {
+          await c.env.IMAGES.delete(fileName);
+          console.log(`Deleted image from R2: ${fileName}`);
+        } catch (imageError) {
+          console.error('Failed to delete image from R2:', imageError);
+          // 画像削除に失敗してもメッセージ削除は成功とする
+        }
+      }
+    }
     
     return c.json({ 
       success: true,
