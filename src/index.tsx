@@ -3800,4 +3800,70 @@ app.delete('/api/staff-messages/:id', async (c) => {
   }
 });
 
+// LINE Webhook エンドポイント
+app.post('/webhook/line', async (c) => {
+  try {
+    const body = await c.req.json();
+    console.log('LINE Webhook received:', JSON.stringify(body, null, 2));
+    
+    // イベントの処理
+    const events = body.events || [];
+    
+    for (const event of events) {
+      // フォローイベント（友だち追加）の場合
+      if (event.type === 'follow') {
+        const userId = event.source.userId;
+        console.log('New friend added:', userId);
+        
+        // ウェルカムメッセージを送信
+        const replyToken = event.replyToken;
+        await fetch('https://api.line.me/v2/bot/message/reply', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${c.env.LINE_CHANNEL_ACCESS_TOKEN}`
+          },
+          body: JSON.stringify({
+            replyToken: replyToken,
+            messages: [{
+              type: 'text',
+              text: 'マカロニスタジオ スタッフ連絡板へようこそ！\n\nあなたのユーザーIDは以下です：\n' + userId + '\n\nこのIDを管理者に伝えてください。'
+            }]
+          })
+        });
+      }
+      
+      // メッセージイベントの場合
+      if (event.type === 'message' && event.message.type === 'text') {
+        const userId = event.source.userId;
+        const messageText = event.message.text;
+        
+        // 「ID」というメッセージが来たらユーザーIDを返信
+        if (messageText === 'ID' || messageText === 'id') {
+          const replyToken = event.replyToken;
+          await fetch('https://api.line.me/v2/bot/message/reply', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${c.env.LINE_CHANNEL_ACCESS_TOKEN}`
+            },
+            body: JSON.stringify({
+              replyToken: replyToken,
+              messages: [{
+                type: 'text',
+                text: 'あなたのユーザーIDは以下です：\n' + userId
+              }]
+            })
+          });
+        }
+      }
+    }
+    
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error('LINE Webhook error:', error);
+    return c.json({ error: 'Webhook processing failed' }, 500);
+  }
+});
+
 export default app;

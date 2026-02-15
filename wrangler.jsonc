@@ -19,4 +19,6 @@
       "bucket_name": "macaroni-staff-images"
     }
   ]
+  // Environment variables (set in Cloudflare Dashboard):
+  // - LINE_CHANNEL_ACCESS_TOKEN: LINE Messaging API Channel Access Token
 }
