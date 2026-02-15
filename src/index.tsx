@@ -2048,9 +2048,16 @@ app.get('/instagram', (c) => {
             </div>
         </nav>
         <script>
-            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.toggle('hidden');
+            document.addEventListener('DOMContentLoaded', () => {
+                const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.addEventListener('click', () => {
+                        const menu = document.getElementById('mobileMenu');
+                        if (menu) {
+                            menu.classList.toggle('hidden');
+                        }
+                    });
+                }
             });
         </script>
         
