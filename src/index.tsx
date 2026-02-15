@@ -771,7 +771,7 @@ app.get('/', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b">
+        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
@@ -844,7 +844,7 @@ app.get('/', (c) => {
             });
         </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
             <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
                     <i class="fas fa-comments text-pink-500 mr-2"></i>
@@ -1007,7 +1007,7 @@ app.get('/admin', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b">
+        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
@@ -1080,7 +1080,7 @@ app.get('/admin', (c) => {
             });
         </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
             <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
@@ -1482,7 +1482,7 @@ app.get('/web-admin', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b">
+        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
@@ -1555,7 +1555,7 @@ app.get('/web-admin', (c) => {
             });
         </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
             <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
                     <i class="fas fa-globe text-pink-500 mr-2"></i>
@@ -1617,7 +1617,7 @@ app.get('/templates', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b">
+        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
@@ -1678,7 +1678,7 @@ app.get('/templates', (c) => {
             });
         </script>
 
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
             <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
                     <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
@@ -2055,7 +2055,7 @@ app.get('/instagram', (c) => {
             window.addEventListener('resize', updateNav);
         </script>
         
-        <div class="container">
+        <div class="container pt-20">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #FF69B4;">
@@ -2414,7 +2414,7 @@ app.get('/blog', (c) => {
             window.addEventListener('resize', updateNav);
         </script>
         
-        <div class="container">
+        <div class="container pt-20">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #3b82f6;">
