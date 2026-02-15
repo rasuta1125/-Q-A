@@ -2454,8 +2454,31 @@ app.get('/blog', (c) => {
                 </h2>
                 
                 <div class="space-y-6">
-                    <!-- 撮影メニュー選択 -->
+                    <!-- 記事タイプ選択 -->
                     <div>
+                        <label class="block text-lg font-semibold mb-3 text-gray-800">
+                            📄 記事タイプ
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label class="flex items-center space-x-2 p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50">
+                                <input type="radio" name="articleType" value="menu" checked class="w-5 h-5 text-blue-500" onchange="toggleMenuSelection()">
+                                <div>
+                                    <span class="font-semibold block">撮影メニュー紹介</span>
+                                    <span class="text-sm text-gray-600">七五三、ミルクバス等</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center space-x-2 p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50">
+                                <input type="radio" name="articleType" value="free" class="w-5 h-5 text-blue-500" onchange="toggleMenuSelection()">
+                                <div>
+                                    <span class="font-semibold block">自由記事・お知らせ</span>
+                                    <span class="text-sm text-gray-600">新サービス、背景紙追加等</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 撮影メニュー選択 -->
+                    <div id="menuSelectionSection">
                         <label class="block text-lg font-semibold mb-3 text-gray-800">
                             📸 撮影メニュー
                         </label>
@@ -2596,6 +2619,22 @@ app.get('/blog', (c) => {
         </div>
         
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            // 記事タイプによってメニュー選択の表示/非表示を切り替え
+            function toggleMenuSelection() {
+                const articleType = document.querySelector('input[name="articleType"]:checked').value;
+                const menuSection = document.getElementById('menuSelectionSection');
+                const mainPointsLabel = document.getElementById('mainPointsLabel');
+                
+                if (articleType === 'free') {
+                    menuSection.style.display = 'none';
+                    mainPointsLabel.textContent = '📝 記事の内容・伝えたいこと';
+                } else {
+                    menuSection.style.display = 'block';
+                    mainPointsLabel.textContent = '📝 記事の要点・特徴';
+                }
+            }
+        </script>
         <script src="/static/blog.js"></script>
     </body>
     </html>
@@ -3158,8 +3197,10 @@ app.post('/api/blog/generate', async (c) => {
     }
   };
   
-  const menuData = MENU_DATA[menu];
-  if (!menuData) {
+  const menuData = menu ? MENU_DATA[menu] : null;
+  
+  // メニュー記事タイプの場合はメニューデータが必須
+  if (articleType === 'menu' && !menuData) {
     return c.json({ error: 'Invalid menu' }, 400);
   }
   
@@ -3294,7 +3335,7 @@ A. [回答3]
 - 文字数は合計1000-1500文字程度
 - 親しみやすく温かい語り口`;
     
-  } else {
+  } else if (articleType === 'story') {
     // 撮影レポート
     prompt = `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」のブログライターです。
 以下の内容でWix用の撮影レポート記事（プレーンテキスト）を作成してください。
@@ -3353,6 +3394,67 @@ Wixにそのままコピペできるプレーンテキスト形式で出力し�
 - 具体的で臨場感のある表現
 - 文字数は合計600-900文字程度
 - 温かく親しみやすい語り口
+- 絵文字は使わない（Wix用）`;
+  } else if (articleType === 'free') {
+    // 自由記事・お知らせ系
+    prompt = `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」のブログライターです。
+以下の内容で、Wixにそのままコピペできるブログ記事原稿（プレーンテキスト）を作成してください。
+
+【記事の種類】
+スタジオのお知らせ・ニュース記事
+（新サービス、背景紙追加、二号店情報、イベント告知など）
+
+【記事タイトル】
+${title || '自動生成してください'}
+
+【記事の内容・伝えたいこと】
+${mainPoints}
+
+${studioStrengths}
+
+【トーン】
+${tone || 'friendly'}（professional=プロフェッショナル、friendly=親しみやすい、casual=カジュアル）
+
+【記事構成】
+1. タイトル（キャッチーで魅力的に）
+   - 新情報を強調
+   - 読者の興味を引くフレーズ
+   
+2. 導入（100-150文字）
+   - お知らせの概要
+   - 何が新しいのか、なぜ嬉しいのか
+   
+3. 詳細説明（400-600文字）
+   - 具体的な内容
+   - 写真があれば説明
+   - 利用シーンや活用方法
+   - お客様へのメリット
+   
+4. まとめ・ご案内（100-150文字）
+   - ご来店の呼びかけ
+   - 予約方法やお問い合わせ先
+
+【出力形式】
+Wixにそのままコピペできるプレーンテキスト形式。
+見出しは「■」または「【】」で始め、段落は空行で区切る。
+親しみやすく、明るいトーンで書いてください。
+
+■ ${title || '[自動生成タイトル]'}
+
+[導入文 - お知らせ内容の概要と嬉しさを表現]
+
+■ [メインセクション見出し]
+
+[詳細説明 - 具体的な内容、活用方法、お客様へのメリット]
+
+■ まとめ
+
+[ご来店の呼びかけと連絡先情報]
+
+【注意事項】
+- 文字数は合計600-900文字程度
+- 温かく親しみやすい語り口
+- 新しさや嬉しさを伝える表現
 - 絵文字は使わない（Wix用）`;
   }
   

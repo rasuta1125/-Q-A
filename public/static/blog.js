@@ -99,12 +99,11 @@ function attachEventListeners() {
 
 // ブログ原稿生成
 async function generateBlogPost() {
-  if (!selectedArticleType) {
-    alert('記事タイプを選択してください');
-    return;
-  }
+  // 記事タイプを取得
+  const articleType = document.querySelector('input[name="articleType"]:checked').value;
   
-  if (!selectedMenu) {
+  // メニュー紹介タイプの場合のみメニュー選択が必須
+  if (articleType === 'menu' && !selectedMenu) {
     alert('撮影メニューを選択してください');
     return;
   }
@@ -115,14 +114,20 @@ async function generateBlogPost() {
   const mainPoints = document.getElementById('mainPoints').value.trim();
   const tone = document.querySelector('input[name="tone"]:checked').value;
   
+  // 自由記事の場合は内容が必須
+  if (articleType === 'free' && !mainPoints) {
+    alert('記事の内容を入力してください');
+    return;
+  }
+  
   // ローディング表示
   document.getElementById('inputSection').classList.add('hidden');
   document.getElementById('loadingSection').classList.remove('hidden');
   
   try {
     const response = await axios.post('/api/blog/generate', {
-      articleType: selectedArticleType,
-      menu: selectedMenu,
+      articleType: articleType,
+      menu: selectedMenu || null,
       title: title,
       keywords: keywords,
       mainPoints: mainPoints,
