@@ -3,6 +3,7 @@
 let currentFilter = 'all';
 let allMessages = [];
 let selectedStaff = '';
+let selectedToStaff = new Set(); // TO（宛先）のセット
 
 // スタッフを選択（グローバル関数として定義）
 window.selectStaff = function(staffName) {
@@ -20,6 +21,41 @@ window.selectStaff = function(staffName) {
     if (targetButton) {
         targetButton.classList.add('selected');
     }
+};
+
+// TO（宛先）を選択/解除（グローバル関数として定義）
+window.toggleToStaff = function(staffName) {
+    const targetButton = document.querySelector(`.to-staff-btn[data-to="${staffName}"]`);
+    
+    if (staffName === '全員') {
+        // 全員を選択した場合、他のすべてを解除
+        selectedToStaff.clear();
+        selectedToStaff.add('全員');
+        document.querySelectorAll('.to-staff-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        targetButton.classList.add('selected');
+    } else {
+        // 個別選択の場合
+        if (selectedToStaff.has('全員')) {
+            // 「全員」が選択されている場合は解除
+            selectedToStaff.delete('全員');
+            document.querySelector('.to-staff-btn[data-to="全員"]').classList.remove('selected');
+        }
+        
+        if (selectedToStaff.has(staffName)) {
+            // すでに選択されている場合は解除
+            selectedToStaff.delete(staffName);
+            targetButton.classList.remove('selected');
+        } else {
+            // 選択されていない場合は追加
+            selectedToStaff.add(staffName);
+            targetButton.classList.add('selected');
+        }
+    }
+    
+    // hidden inputに値を設定
+    document.getElementById('toStaff').value = Array.from(selectedToStaff).join(',');
 };
 
 // ページ読み込み時に連絡事項を取得
@@ -252,11 +288,14 @@ async function addMessage() {
             }
         }
         
+        const toStaff = document.getElementById('toStaff').value;
+        
         const response = await axios.post('/api/staff-messages', {
             staff_name: staffName,
             message_date: messageDate,
             content: content,
-            image_url: image_url
+            image_url: image_url,
+            to_staff: toStaff || null
         });
         
         if (response.data.success) {
@@ -270,6 +309,13 @@ async function addMessage() {
             document.querySelectorAll('.staff-tab').forEach(tab => {
                 tab.classList.remove('selected');
             });
+            
+            // TO選択状態をリセット
+            selectedToStaff.clear();
+            document.querySelectorAll('.to-staff-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById('toStaff').value = '';
             
             // 成功メッセージ
             showNotification('連絡事項を追加しました', 'success');

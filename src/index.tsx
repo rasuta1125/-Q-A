@@ -2690,6 +2690,15 @@ app.get('/staff-board', (c) => {
             .staff-tab:hover {
                 transform: translateY(-1px);
             }
+            .to-staff-btn.selected {
+                background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+                color: white;
+                border-color: #3B82F6;
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+            }
+            .to-staff-btn:hover {
+                transform: translateY(-1px);
+            }
         </style>
     </head>
     <body class="bg-gray-50">
@@ -2802,6 +2811,38 @@ app.get('/staff-board', (c) => {
                                 class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-pink-400 focus:outline-none"
                             />
                         </div>
+                    </div>
+                    
+                    <!-- TO（宛先）選択 -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">
+                            📩 TO（宛先） <span class="text-gray-500 text-xs">(任意 - 複数選択可)</span>
+                        </label>
+                        <div class="grid grid-cols-3 md:grid-cols-4 gap-2" id="toStaffGrid">
+                            <button type="button" onclick="toggleToStaff('全員')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="全員">
+                                👥 全員
+                            </button>
+                            <button type="button" onclick="toggleToStaff('坂口')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="坂口">
+                                坂口
+                            </button>
+                            <button type="button" onclick="toggleToStaff('小百合')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="小百合">
+                                小百合
+                            </button>
+                            <button type="button" onclick="toggleToStaff('史弥')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="史弥">
+                                史弥
+                            </button>
+                            <button type="button" onclick="toggleToStaff('秋吉')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="秋吉">
+                                秋吉
+                            </button>
+                            <button type="button" onclick="toggleToStaff('響')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="響">
+                                響
+                            </button>
+                            <button type="button" onclick="toggleToStaff('みれい')" class="to-staff-btn px-3 py-2 rounded-lg border-2 border-gray-300 hover:border-blue-400 transition text-sm" data-to="みれい">
+                                みれい
+                            </button>
+                        </div>
+                        <input type="hidden" id="toStaff" value="" />
+                        <p class="text-xs text-gray-500 mt-2">💡 宛先を指定するとLINE通知が送信されます</p>
                     </div>
                     
                     <div>
@@ -3610,7 +3651,7 @@ app.get('/api/images/:fileName', async (c) => {
 app.post('/api/staff-messages', async (c) => {
   try {
     const db = c.env.DB;
-    const { staff_name, message_date, content, image_url } = await c.req.json();
+    const { staff_name, message_date, content, image_url, to_staff } = await c.req.json();
     
     // バリデーション
     if (!staff_name || !message_date || !content) {
@@ -3618,9 +3659,36 @@ app.post('/api/staff-messages', async (c) => {
     }
     
     const result = await db.prepare(
-      `INSERT INTO staff_messages (staff_name, message_date, content, image_url, is_completed)
-       VALUES (?, ?, ?, ?, 0)`
-    ).bind(staff_name, message_date, content, image_url || null).run();
+      `INSERT INTO staff_messages (staff_name, message_date, content, image_url, to_staff, is_completed)
+       VALUES (?, ?, ?, ?, ?, 0)`
+    ).bind(staff_name, message_date, content, image_url || null, to_staff || null).run();
+    
+    // LINE通知を送信（TOが指定されている場合）
+    if (to_staff && c.env.LINE_NOTIFY_TOKEN) {
+      try {
+        const toList = to_staff.split(',').join('、');
+        const messageText = `【スタッフ連絡板】
+📩 TO: ${toList}
+👤 差出人: ${staff_name}
+📅 日付: ${message_date}
+📝 内容:
+${content}
+
+🔗 https://56928817.maca-7i4.pages.dev/staff-board`;
+
+        await fetch('https://notify-api.line.me/api/notify', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${c.env.LINE_NOTIFY_TOKEN}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `message=${encodeURIComponent(messageText)}`,
+        });
+      } catch (lineError) {
+        console.error('LINE通知の送信に失敗:', lineError);
+        // LINE通知失敗はエラーとせず、メッセージ保存は成功とする
+      }
+    }
     
     return c.json({ 
       success: true, 
