@@ -2935,7 +2935,7 @@ app.get('/staff-board', (c) => {
  * Instagram投稿文生成API
  */
 app.post('/api/instagram/generate', async (c) => {
-  const { OPENAI_API_KEY } = c.env;
+  const { ANTHROPIC_API_KEY } = c.env;
   const { menu, description, moods, specialPoint } = await c.req.json();
   
   // メニューデータ
@@ -3098,20 +3098,18 @@ ${servicesList}
 [投稿文]`;
 
   try {
-    // OpenAI API呼び出し
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Anthropic Claude API呼び出し
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-opus-4-5',
+        system: 'あなたはプロのSNSコンテンツライターです。温かく優しい文体で、子どもたちや家族の素敵な瞬間を伝える投稿文を作成します。過去の投稿サンプルの文体・構成・雰囲気を忠実に再現してください。',
         messages: [
-          {
-            role: 'system',
-            content: 'あなたはプロのSNSコンテンツライターです。温かく優しい文体で、子どもたちや家族の素敵な瞬間を伝える投稿文を作成します。過去の投稿サンプルの文体・構成・雰囲気を忠実に再現してください。'
-          },
           {
             role: 'user',
             content: prompt
@@ -3124,11 +3122,11 @@ ${servicesList}
     
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(`OpenAI API error: ${response.statusText} - ${errorData}`);
+      throw new Error(`Anthropic API error: ${response.statusText} - ${errorData}`);
     }
     
     const data = await response.json();
-    const generatedText = data.choices[0].message.content;
+    const generatedText = data.content[0].text;
     
     // 3パターンに分割
     const patterns = generatedText.split(/---パターン\d---/).filter((p: string) => p.trim());
@@ -3157,7 +3155,7 @@ ${servicesList}
  * ブログ記事生成API
  */
 app.post('/api/blog/generate', async (c) => {
-  const { OPENAI_API_KEY } = c.env;
+  const { ANTHROPIC_API_KEY } = c.env;
   const { articleType, menu, title, keywords, mainPoints, tone } = await c.req.json();
   
   // メニューデータ
@@ -3506,20 +3504,18 @@ Wixにそのままコピペできるプレーンテキスト形式。
   }
   
   try {
-    // OpenAI API呼び出し
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Anthropic Claude API呼び出し
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-opus-4-5',
+        system: 'あなたはプロのブログライターです。SEOを意識しつつ、読みやすく魅力的な記事を作成します。Wixにそのままコピペできるプレーンテキスト形式で出力してください。',
         messages: [
-          {
-            role: 'system',
-            content: 'あなたはプロのブログライターです。SEOを意識しつつ、読みやすく魅力的な記事を作成します。Wixにそのままコピペできるプレーンテキスト形式で出力してください。'
-          },
           {
             role: 'user',
             content: prompt
@@ -3532,11 +3528,11 @@ Wixにそのままコピペできるプレーンテキスト形式。
     
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(`OpenAI API error: ${response.statusText} - ${errorData}`);
+      throw new Error(`Anthropic API error: ${response.statusText} - ${errorData}`);
     }
     
     const data = await response.json();
-    const article = data.choices[0].message.content;
+    const article = data.content[0].text;
     
     return c.json({
       article: article,

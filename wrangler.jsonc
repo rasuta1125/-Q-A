@@ -21,4 +21,6 @@
   ]
   // Environment variables (set in Cloudflare Dashboard):
   // - LINE_CHANNEL_ACCESS_TOKEN: LINE Messaging API Channel Access Token
+  // - OPENAI_API_KEY: OpenAI API Key (for Q&A embedding & answer generation)
+  // - ANTHROPIC_API_KEY: Anthropic Claude API Key (for blog & Instagram post generation)
 }
