@@ -3155,7 +3155,12 @@ ${servicesList}
  */
 app.post('/api/blog/generate', async (c) => {
   const { ANTHROPIC_API_KEY } = c.env;
-  const { articleType, menu, title, keywords, mainPoints, tone } = await c.req.json();
+  const body = await c.req.json();
+  const { menu, title, keywords, mainPoints, tone } = body;
+  // articleType が未送信・null・undefined の場合も安全に処理
+  const articleType: string = body.articleType || 'free';
+
+  console.log('[blog/generate] articleType:', articleType, '| menu:', menu, '| title:', title);
   
   // メニューデータ
   const MENU_DATA: Record<string, any> = {
@@ -3500,6 +3505,12 @@ Wixにそのままコピペできるプレーンテキスト形式。
 - 温かく親しみやすい語り口
 - 新しさや嬉しさを伝える表現
 - 絵文字は使わない（Wix用）`;
+  }
+
+  // プロンプトが空の場合はエラーを返す
+  if (!prompt) {
+    console.error('[blog/generate] prompt is empty. articleType:', articleType);
+    return c.json({ error: `不明な記事タイプです: ${articleType}` }, 400);
   }
   
   try {
