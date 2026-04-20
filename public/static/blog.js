@@ -99,11 +99,16 @@ function attachEventListeners() {
 
 // ブログ原稿生成
 async function generateBlogPost() {
-  // 記事タイプを取得
-  const articleType = document.querySelector('input[name="articleType"]:checked').value;
-  
+  // 記事タイプを取得（カード選択式UIから）
+  const articleType = selectedArticleType;
+
+  if (!articleType) {
+    alert('記事タイプを選択してください');
+    return;
+  }
+
   // メニュー紹介タイプの場合のみメニュー選択が必須
-  if (articleType === 'menu' && !selectedMenu) {
+  if (articleType === 'introduction' && !selectedMenu) {
     alert('撮影メニューを選択してください');
     return;
   }
@@ -112,7 +117,8 @@ async function generateBlogPost() {
   const title = document.getElementById('title').value.trim();
   const keywords = document.getElementById('keywords').value.trim();
   const mainPoints = document.getElementById('mainPoints').value.trim();
-  const tone = document.querySelector('input[name="tone"]:checked').value;
+  const toneEl = document.querySelector('input[name="tone"]:checked');
+  const tone = toneEl ? toneEl.value : 'friendly';
   
   // 自由記事の場合は内容が必須
   if (articleType === 'free' && !mainPoints) {
