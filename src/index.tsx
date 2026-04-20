@@ -3115,7 +3115,6 @@ ${servicesList}
             content: prompt
           }
         ],
-        temperature: 0.8,
         max_tokens: 1500
       })
     });
@@ -3521,7 +3520,6 @@ Wixにそのままコピペできるプレーンテキスト形式。
             content: prompt
           }
         ],
-        temperature: 0.7,
         max_tokens: 2500
       })
     });
