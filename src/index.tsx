@@ -3107,7 +3107,7 @@ ${servicesList}
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
+        model: 'claude-opus-4-7',
         system: 'あなたはプロのSNSコンテンツライターです。温かく優しい文体で、子どもたちや家族の素敵な瞬間を伝える投稿文を作成します。過去の投稿サンプルの文体・構成・雰囲気を忠実に再現してください。',
         messages: [
           {
@@ -3513,7 +3513,7 @@ Wixにそのままコピペできるプレーンテキスト形式。
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
+        model: 'claude-opus-4-7',
         system: 'あなたはプロのブログライターです。SEOを意識しつつ、読みやすく魅力的な記事を作成します。Wixにそのままコピペできるプレーンテキスト形式で出力してください。',
         messages: [
           {
