@@ -801,6 +801,9 @@ app.get('/', (c) => {
                         <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
+                        </a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -833,6 +836,9 @@ app.get('/', (c) => {
                     </a>
                     <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
                     </a>
                 </div>
             </div>
@@ -1037,6 +1043,9 @@ app.get('/admin', (c) => {
                         <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
+                        </a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -1069,6 +1078,9 @@ app.get('/admin', (c) => {
                     </a>
                     <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
                     </a>
                 </div>
             </div>
@@ -1512,6 +1524,9 @@ app.get('/web-admin', (c) => {
                         <a href="/web-admin" class="text-pink-500 font-semibold">
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
+                        </a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -1544,6 +1559,9 @@ app.get('/web-admin', (c) => {
                     </a>
                     <a href="/web-admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
                         <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
                     </a>
                 </div>
             </div>
@@ -1641,6 +1659,9 @@ app.get('/templates', (c) => {
                         <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
+                        </a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -1667,6 +1688,9 @@ app.get('/templates', (c) => {
                     </a>
                     <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
                     </a>
                 </div>
             </div>
@@ -2011,6 +2035,9 @@ app.get('/instagram', (c) => {
                         <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
+                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
+                        </a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -2043,6 +2070,9 @@ app.get('/instagram', (c) => {
                     </a>
                     <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
                         <i class="fas fa-globe mr-2"></i>Web管理
+                    </a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
+                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
                     </a>
                 </div>
             </div>
@@ -2368,6 +2398,9 @@ app.get('/blog', (c) => {
                         <a href="/admin" style="color: #374151; text-decoration: none;">
                             <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
                         </a>
+                        <a href="/dashboard" style="color: #374151; text-decoration: none;">
+                            <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>ダッシュボード
+                        </a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div id="mobileNavBtn" style="display: none;">
@@ -2396,6 +2429,9 @@ app.get('/blog', (c) => {
                 </a>
                 <a href="/admin" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
                     <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
+                </a>
+                <a href="/dashboard" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
+                    <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>ダッシュボード
                 </a>
             </div>
         </nav>
@@ -2734,6 +2770,9 @@ app.get('/staff-board', (c) => {
                         <a href="/web-admin" class="text-gray-700 hover:text-pink-400 transition flex items-center">
                             <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-400 transition flex items-center">
+                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
+                        </a>
                     </div>
                     
                     <!-- モバイルメニューボタン -->
@@ -2751,6 +2790,7 @@ app.get('/staff-board', (c) => {
                     <a href="/staff-board" class="block py-2 text-pink-500 font-semibold"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
                     <a href="/admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
                     <a href="/web-admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                    <a href="/dashboard" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
             </nav>
         </header>
@@ -3971,6 +4011,129 @@ app.post('/webhook/line', async (c) => {
     console.error('LINE Webhook error:', error);
     return c.json({ error: 'Webhook processing failed' }, 500);
   }
+});
+
+// =====================================
+// カレンダープロキシAPI（Anthropic MCP経由）
+// =====================================
+app.post('/api/calendar-proxy', async (c) => {
+  try {
+    const ANTHROPIC_API_KEY = c.env.ANTHROPIC_API_KEY;
+    if (!ANTHROPIC_API_KEY) {
+      return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 500);
+    }
+    const body = await c.req.json();
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'mcp-client-2025-04-04',
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return c.json(data, res.status as any);
+  } catch (error: any) {
+    console.error('Calendar proxy error:', error);
+    return c.json({ error: error.message || 'Proxy error' }, 500);
+  }
+});
+
+// =====================================
+// ダッシュボードページ
+// =====================================
+app.get('/dashboard', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>売上ダッシュボード - マカロニスタジオ</title>
+  <!-- ナビゲーション用Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- React + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Recharts (UMD build) -->
+  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
+  <!-- Babel Standalone for JSX transform -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; }
+    #dashboard-root { padding-top: 64px; }
+  </style>
+</head>
+<body>
+  <!-- ナビゲーションバー -->
+  <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
+          <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
+        </div>
+        <div class="hidden md:flex items-center space-x-4">
+          <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-2"></i>回答生成</a>
+          <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
+          <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
+          <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
+          <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-2"></i>定型文</a>
+          <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+          <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-2"></i>Web管理</a>
+          <a href="/dashboard" class="text-pink-500 font-semibold"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+        </div>
+        <div class="md:hidden flex items-center">
+          <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
+            <i class="fas fa-bars text-2xl"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+      <div class="px-2 pt-2 pb-3 space-y-1">
+        <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+        <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
+        <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
+        <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
+        <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>定型文</a>
+        <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+        <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+      </div>
+    </div>
+  </nav>
+  <script>
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      document.getElementById('mobileMenu').classList.toggle('hidden');
+    });
+  </script>
+
+  <div id="dashboard-root"></div>
+
+  <script>
+    // Babel standalone が外部ファイルを処理した後にマウント
+    // Babel は type="text/babel" スクリプトを全て処理してから DOMContentLoaded を発火させる
+    document.addEventListener('DOMContentLoaded', function() {
+      // 少し待機してBabelのトランスパイルを待つ
+      setTimeout(function() {
+        const container = document.getElementById('dashboard-root');
+        if (container && typeof window.Dashboard !== 'undefined') {
+          const root = ReactDOM.createRoot(container);
+          root.render(React.createElement(window.Dashboard));
+        } else if (container) {
+          container.innerHTML = '<div style="color:red;padding:40px;font-family:sans-serif">Dashboardコンポーネントの読み込みに失敗しました。<br>コンソール(F12)を確認してください。</div>';
+        }
+      }, 500);
+    });
+  </script>
+
+  <!-- ダッシュボード本体（JSX形式、Babelがトランスパイル） -->
+  <script type="text/babel" src="/static/dashboard.jsx" data-presets="react"></script>
+</body>
+</html>`);
 });
 
 export default app;
