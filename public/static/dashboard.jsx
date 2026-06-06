@@ -1,4 +1,6 @@
 
+// CALENDAR_ID は HTMLページ側で window.CALENDAR_ID として定義済み
+const CALENDAR_ID = window.CALENDAR_ID || "c_71eb3bcb852f2600b294fddc17dd551af498b61722b5076438547860b40fae0b@group.calendar.google.com";
 
 // ── プラン・性別 固定データ（2025年1月〜2026年3月）──
 const STATIC_PLANS = {
