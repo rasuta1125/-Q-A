@@ -2,7 +2,12 @@
 export type Bindings = {
   DB: D1Database;
   VECTORIZE: VectorizeIndex;
+  IMAGES: R2Bucket;
   OPENAI_API_KEY: string;
+  ANTHROPIC_API_KEY: string;
+  LINE_CHANNEL_ACCESS_TOKEN: string;
+  LINE_NOTIFY_TOKEN: string;
+  [key: string]: unknown;
 }
 
 // Q&Aアイテム型

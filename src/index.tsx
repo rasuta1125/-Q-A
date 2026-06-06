@@ -2935,7 +2935,7 @@ app.get('/staff-board', (c) => {
  * Instagram投稿文生成API
  */
 app.post('/api/instagram/generate', async (c) => {
-  const { ANTHROPIC_API_KEY } = c.env;
+  const { OPENAI_API_KEY } = c.env;
   const { menu, description, moods, specialPoint } = await c.req.json();
   
   // メニューデータ
@@ -3098,34 +3098,37 @@ ${servicesList}
 [投稿文]`;
 
   try {
-    // Anthropic Claude API呼び出し
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // OpenAI API呼び出し
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-7',
-        system: 'あなたはプロのSNSコンテンツライターです。温かく優しい文体で、子どもたちや家族の素敵な瞬間を伝える投稿文を作成します。過去の投稿サンプルの文体・構成・雰囲気を忠実に再現してください。',
+        model: 'gpt-4o-mini',
         messages: [
+          {
+            role: 'system',
+            content: 'あなたはプロのSNSコンテンツライターです。温かく優しい文体で、子どもたちや家族の素敵な瞬間を伝える投稿文を作成します。過去の投稿サンプルの文体・構成・雰囲気を忠実に再現してください。'
+          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        temperature: 0.8,
         max_tokens: 1500
       })
     });
     
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(`Anthropic API error: ${response.statusText} - ${errorData}`);
+      throw new Error(`OpenAI API error: ${response.statusText} - ${errorData}`);
     }
     
     const data = await response.json();
-    const generatedText = data.content[0].text;
+    const generatedText = data.choices[0].message.content;
     
     // 3パターンに分割
     const patterns = generatedText.split(/---パターン\d---/).filter((p: string) => p.trim());
@@ -3154,7 +3157,8 @@ ${servicesList}
  * ブログ記事生成API
  */
 app.post('/api/blog/generate', async (c) => {
-  const { ANTHROPIC_API_KEY } = c.env;
+  const OPENAI_API_KEY = c.env.OPENAI_API_KEY || (c as any).env?.OPENAI_API_KEY;
+  console.log('[blog/generate] OPENAI_API_KEY exists:', !!OPENAI_API_KEY, '| length:', OPENAI_API_KEY?.length);
   const body = await c.req.json();
   const { menu, title, keywords, mainPoints, tone } = body;
   // articleType が未送信・null・undefined の場合も安全に処理
@@ -3596,17 +3600,19 @@ Wixにそのままコピペできるプレーンテキスト形式。
   }
   
   try {
-    // Anthropic Claude API呼び出し
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // OpenAI API呼び出し
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-7',
-        system: `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」の専属ブログライターです。
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `あなたは沖縄県那覇市の子ども専門フォトスタジオ「マカロニスタジオ」の専属ブログライターです。
 SEOを意識しつつ、読みやすく魅力的な記事を作成します。Wixにそのままコピペできるプレーンテキスト形式で出力してください。
 
 ${studioStrengths}
@@ -3617,24 +3623,25 @@ ${studioStrengths}
 3. 憶測や推測でスタジオ情報を補完しない
 4. 「行っていないこと」に該当する内容（ロケーションフォト・お食い初め等）は記事に含めない
 5. 記事の最後には必ず以下の予約方法を記載する：
-   「ご予約はInstagram DM・公式LINE・ホームページからお気軽にどうぞ！」`,
-        messages: [
+   「ご予約はInstagram DM・公式LINE・ホームページからお気軽にどうぞ！」`
+          },
           {
             role: 'user',
             content: prompt
           }
         ],
+        temperature: 0.7,
         max_tokens: 2500
       })
     });
     
     if (!response.ok) {
       const errorData = await response.text();
-      throw new Error(`Anthropic API error: ${response.statusText} - ${errorData}`);
+      throw new Error(`OpenAI API error: ${response.statusText} - ${errorData}`);
     }
     
     const data = await response.json();
-    const article = data.content[0].text;
+    const article = data.choices[0].message.content;
     
     return c.json({
       article: article,
