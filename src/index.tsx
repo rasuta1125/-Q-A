@@ -4051,61 +4051,59 @@ app.get('/dashboard', (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>売上ダッシュボード - マカロニスタジオ</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { margin: 0; padding: 0; }
-    #dashboard-root { padding-top: 64px; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff}
+    #dashboard-root{padding-top:64px}
+    .db-nav{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);border-bottom:1px solid #e5e7eb;position:fixed;top:0;left:0;right:0;z-index:50;height:64px;display:flex;align-items:center;padding:0 24px}
+    .db-nav-inner{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:1280px;margin:0 auto}
+    .db-nav-logo{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111;text-decoration:none}
+    .db-nav-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+    .db-nav-links a{color:#374151;text-decoration:none;font-size:13px;white-space:nowrap}
+    .db-nav-links a:hover,.db-nav-links a.active{color:#ec4899}
+    .db-nav-links a.active{font-weight:600}
+    .db-menu-btn{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:#374151;padding:4px}
+    .db-mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;z-index:49;padding:8px;box-shadow:0 4px 6px rgba(0,0,0,.05)}
+    .db-mobile-menu a{display:block;padding:10px 12px;color:#374151;text-decoration:none;font-size:15px;border-radius:6px}
+    .db-mobile-menu a:hover{background:#f9fafb}
+    .db-mobile-menu a.active{color:#ec4899;font-weight:600;background:#fdf2f8}
+    @media(max-width:768px){.db-nav-links{display:none}.db-menu-btn{display:block}}
   </style>
 </head>
 <body>
-  <!-- ナビゲーションバー -->
-  <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center">
-          <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
-          <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
-        </div>
-        <div class="hidden md:flex items-center space-x-4">
-          <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-2"></i>回答生成</a>
-          <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
-          <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
-          <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
-          <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-2"></i>定型文</a>
-          <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
-          <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-2"></i>Web管理</a>
-          <a href="/dashboard" class="text-pink-500 font-semibold"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
-        </div>
-        <div class="md:hidden flex items-center">
-          <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
-            <i class="fas fa-bars text-2xl"></i>
-          </button>
-        </div>
+  <nav class="db-nav">
+    <div class="db-nav-inner">
+      <a class="db-nav-logo" href="/">&#128247; マカロニスタジオ Q&A</a>
+      <div class="db-nav-links">
+        <a href="/">回答生成</a>
+        <a href="/instagram">Instagram投稿</a>
+        <a href="/blog">ブログ原稿</a>
+        <a href="/staff-board">スタッフ連絡板</a>
+        <a href="/templates">定型文</a>
+        <a href="/admin">Q&A管理</a>
+        <a href="/web-admin">Web管理</a>
+        <a href="/dashboard" class="active">ダッシュボード</a>
       </div>
-    </div>
-    <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-      <div class="px-2 pt-2 pb-3 space-y-1">
-        <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
-        <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
-        <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
-        <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
-        <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>定型文</a>
-        <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
-        <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
-        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
-      </div>
+      <button class="db-menu-btn" id="mobileMenuBtn">&#9776;</button>
     </div>
   </nav>
+  <div class="db-mobile-menu" id="mobileMenu">
+    <a href="/">回答生成</a>
+    <a href="/instagram">Instagram投稿</a>
+    <a href="/blog">ブログ原稿</a>
+    <a href="/staff-board">スタッフ連絡板</a>
+    <a href="/templates">定型文</a>
+    <a href="/admin">Q&A管理</a>
+    <a href="/web-admin">Web管理</a>
+    <a href="/dashboard" class="active">ダッシュボード</a>
+  </div>
   <script>
-    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-      document.getElementById('mobileMenu').classList.toggle('hidden');
+    document.getElementById('mobileMenuBtn').addEventListener('click',function(){
+      var m=document.getElementById('mobileMenu');
+      m.style.display=m.style.display==='block'?'none':'block';
     });
   </script>
-
   <div id="dashboard-root"></div>
-
-  <!-- esbuildでビルド済みバンドル（React+Recharts+Dashboard全込み） -->
   <script src="/static/dashboard.bundle.js"></script>
 </body>
 </html>`);
