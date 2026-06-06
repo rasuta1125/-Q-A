@@ -1,6 +1,12 @@
 
-// CALENDAR_ID は HTMLページ側で window.CALENDAR_ID として定義済み
-const CALENDAR_ID = window.CALENDAR_ID || "c_71eb3bcb852f2600b294fddc17dd551af498b61722b5076438547860b40fae0b@group.calendar.google.com";
+import { useState, useEffect, useCallback } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  LineChart, Line, Legend
+} from "recharts";
+
+const CALENDAR_ID = "c_71eb3bcb852f2600b294fddc17dd551af498b61722b5076438547860b40fae0b@group.calendar.google.com";
 
 // ── プラン・性別 固定データ（2025年1月〜2026年3月）──
 const STATIC_PLANS = {
@@ -403,6 +409,45 @@ const Tip = ({ active, payload, label }) => {
     </div>
   );
 };
+
+function MonthAccordion({ m, defaultOpen }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{marginBottom:10}}>
+      <div onClick={()=>setOpen(!open)} style={{background:"rgba(255,255,255,.04)",border:`1px solid ${m.color}33`,borderRadius:12,padding:"12px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:13,fontWeight:700,color:m.color}}>{m.month}</span>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{m.count}件</span>
+          <span style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>{open?"▲":"▼"}</span>
+        </div>
+      </div>
+      {open&&(
+        <div style={{border:`1px solid ${m.color}22`,borderTop:"none",borderRadius:"0 0 12px 12px",overflow:"hidden"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <thead>
+              <tr style={{background:"rgba(255,255,255,.04)"}}>
+                {["日","時間","お名前","プラン","金額"].map(h=>(
+                  <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"rgba(255,255,255,.4)",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,.06)"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {m.bookings.map((b,bi)=>(
+                <tr key={bi} style={{borderBottom:"1px solid rgba(255,255,255,.04)",background:bi%2===0?"rgba(255,255,255,.01)":"transparent"}}>
+                  <td style={{padding:"7px 10px",color:"rgba(255,255,255,.5)"}}>{b.day}</td>
+                  <td style={{padding:"7px 10px",color:"rgba(255,255,255,.4)"}}>{b.time}</td>
+                  <td style={{padding:"7px 10px",color:"#fff",fontWeight:500}}>{b.name}</td>
+                  <td style={{padding:"7px 10px",color:"rgba(255,255,255,.6)"}}>{b.plan}</td>
+                  <td style={{padding:"7px 10px",color:m.color,fontWeight:700}}>{b.price}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Dashboard() {
   const [tab,          setTab]          = useState("overview");
@@ -965,44 +1010,8 @@ function Dashboard() {
                 {day:"31",time:"14:00",name:"津秋 知紗",plan:"1歳バースデーフォト（女の子）",price:"¥26,000"},
                 {day:"31",time:"16:00",name:"奥間 蘭心",plan:"ハーフバースデー（女の子）",price:"¥26,000"},
               ]},
-            ].map((m,mi)=>{
-              const [open,setOpen]=useState(mi===0);
-              return (
-                <div key={mi} style={{marginBottom:10}}>
-                  <div onClick={()=>setOpen(!open)} style={{background:"rgba(255,255,255,.04)",border:`1px solid ${m.color}33`,borderRadius:12,padding:"12px 16px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:13,fontWeight:700,color:m.color}}>{m.month}</span>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{m.count}件</span>
-                      <span style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>{open?"▲":"▼"}</span>
-                    </div>
-                  </div>
-                  {open&&(
-                    <div style={{border:`1px solid ${m.color}22`,borderTop:"none",borderRadius:"0 0 12px 12px",overflow:"hidden"}}>
-                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-                        <thead>
-                          <tr style={{background:"rgba(255,255,255,.04)"}}>
-                            {["日","時間","お名前","プラン","金額"].map(h=>(
-                              <th key={h} style={{padding:"8px 10px",textAlign:"left",color:"rgba(255,255,255,.4)",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,.06)"}}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {m.bookings.map((b,bi)=>(
-                            <tr key={bi} style={{borderBottom:"1px solid rgba(255,255,255,.04)",background:bi%2===0?"rgba(255,255,255,.01)":"transparent"}}>
-                              <td style={{padding:"7px 10px",color:"rgba(255,255,255,.5)"}}>{b.day}</td>
-                              <td style={{padding:"7px 10px",color:"rgba(255,255,255,.4)"}}>{b.time}</td>
-                              <td style={{padding:"7px 10px",color:"#fff",fontWeight:500}}>{b.name}</td>
-                              <td style={{padding:"7px 10px",color:"rgba(255,255,255,.6)"}}>{b.plan}</td>
-                              <td style={{padding:"7px 10px",color:m.color,fontWeight:700}}>{b.price}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            ].map((m,mi)=><MonthAccordion key={mi} m={m} defaultOpen={mi===0}/>)
+            }
 
             <div style={{height:24}}/>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
@@ -1359,4 +1368,8 @@ function Dashboard() {
   );
 }
 
-window.Dashboard = Dashboard;
+// マウント
+const container = document.getElementById("dashboard-root");
+if (container) {
+  createRoot(container).render(<Dashboard />);
+}
