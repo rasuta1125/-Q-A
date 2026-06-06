@@ -4051,20 +4051,8 @@ app.get('/dashboard', (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>売上ダッシュボード - マカロニスタジオ</title>
-  <!-- ナビゲーション用Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- React + ReactDOM -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Recharts (UMD build) -->
-  <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js"></script>
-  <!-- Babel Standalone for JSX transform -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- 定数定義 -->
-  <script>
-    window.CALENDAR_ID = "c_71eb3bcb852f2600b294fddc17dd551af498b61722b5076438547860b40fae0b@group.calendar.google.com";
-  </script>
   <style>
     body { margin: 0; padding: 0; }
     #dashboard-root { padding-top: 64px; }
@@ -4117,32 +4105,8 @@ app.get('/dashboard', (c) => {
 
   <div id="dashboard-root"></div>
 
-  <!-- ダッシュボード本体（JSX形式、Babelがトランスパイル） -->
-  <script type="text/babel" src="/static/dashboard.jsx" data-presets="react"></script>
-
-  <script>
-    // Babel standalone の外部JSXは非同期でfetch→トランスパイルされるため
-    // window.Dashboard が定義されるまでポーリングして待つ
-    (function mount() {
-      var attempts = 0;
-      var maxAttempts = 40; // 最大4秒待機
-      function tryMount() {
-        attempts++;
-        var container = document.getElementById('dashboard-root');
-        if (container && typeof window.Dashboard !== 'undefined') {
-          var root = ReactDOM.createRoot(container);
-          root.render(React.createElement(window.Dashboard));
-        } else if (attempts < maxAttempts) {
-          setTimeout(tryMount, 100);
-        } else {
-          if (container) {
-            container.innerHTML = '<div style="color:red;padding:40px;font-family:sans-serif">Dashboardコンポーネントの読み込みに失敗しました。<br>コンソール(F12)を確認してください。</div>';
-          }
-        }
-      }
-      tryMount();
-    })();
-  </script>
+  <!-- esbuildでビルド済みバンドル（React+Recharts+Dashboard全込み） -->
+  <script src="/static/dashboard.bundle.js"></script>
 </body>
 </html>`);
 });
