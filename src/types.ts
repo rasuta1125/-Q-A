@@ -5,6 +5,9 @@ export type Bindings = {
   IMAGES: R2Bucket;
   OPENAI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
+  GOOGLE_CLIENT_ID: string;
+  GOOGLE_CLIENT_SECRET: string;
+  GOOGLE_REFRESH_TOKEN: string;
   LINE_CHANNEL_ACCESS_TOKEN: string;
   LINE_NOTIFY_TOKEN: string;
   [key: string]: unknown;

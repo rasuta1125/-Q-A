@@ -311,43 +311,19 @@ function buildEventsFromStatic(now, months) {
   return events;
 }
 
-// ── Anthropic API：今月＋翌月以降のみ取得してSTATIC_PLANSとマージ ──
-// ── 共通：カレンダーからイベント取得 ──
+// ── Google Calendar API直接アクセス ──
 async function fetchCalendarEvents(fromDate, toDate, onProgress, label) {
   onProgress?.(`${label}を取得中...`);
-  const res = await fetch("/api/calendar-proxy", {
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      model:"claude-sonnet-4-20250514",
-      max_tokens:6000,
-      mcp_servers:[{type:"url",url:"https://gcal.mcp.claude.com/mcp",name:"google-calendar"}],
-      messages:[{
-        role:"user",
-        content:`Google CalendarカレンダーID「${CALENDAR_ID}」から${fromDate.toISOString().slice(0,10)}〜${toDate.toISOString().slice(0,10)}の全予約イベントを取得し、JSON配列のみ返してください（説明文・マークダウン不要）:\n[{"created":"ISO日時","start":{"dateTime":"ISO日時"},"description":"プラン名 - 時間 - 料金"}]`
-      }]
-    })
+  const params = new URLSearchParams({
+    calendarId: CALENDAR_ID,
+    timeMin:    fromDate.toISOString(),
+    timeMax:    toDate.toISOString(),
   });
+  const res = await fetch(`/api/calendar?${params}`);
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message || "API error");
-  let events = [];
-  for (const block of (data.content||[])) {
-    if (block.type==="mcp_tool_result") {
-      try { const p=JSON.parse(block.content?.[0]?.text||""); const arr=Array.isArray(p)?p:(p.events||p.items||[]); if(arr.length>0){events=arr;break;} } catch {}
-    }
-  }
-  if (events.length===0) {
-    for (const block of (data.content||[])) {
-      if (block.type==="text") {
-        for (const c of (block.text.match(/\[[\s\S]*?\]/g)||[])) {
-          try { const p=JSON.parse(c); if(Array.isArray(p)&&p.length>0&&p[0].created){events=p;break;} } catch {}
-        }
-      }
-      if (events.length>0) break;
-    }
-  }
-  if (events.length===0) throw new Error("イベントデータを取得できませんでした");
-  return events;
+  if (data.error) throw new Error(data.error);
+  if (!data.events || data.events.length === 0) throw new Error("イベントデータを取得できませんでした");
+  return data.events;
 }
 
 // ── 予約分析・予約履歴の取得（今月〜年末） ──

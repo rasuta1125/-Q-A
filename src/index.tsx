@@ -4014,30 +4014,69 @@ app.post('/webhook/line', async (c) => {
 });
 
 // =====================================
-// カレンダープロキシAPI（Anthropic MCP経由）
+// カレンダーAPI（Google Calendar API直接アクセス）
 // =====================================
-app.post('/api/calendar-proxy', async (c) => {
+app.get('/api/calendar', async (c) => {
   try {
-    const ANTHROPIC_API_KEY = c.env.ANTHROPIC_API_KEY;
-    if (!ANTHROPIC_API_KEY) {
-      return c.json({ error: 'ANTHROPIC_API_KEY not configured' }, 500);
+    const CLIENT_ID     = c.env.GOOGLE_CLIENT_ID;
+    const CLIENT_SECRET = c.env.GOOGLE_CLIENT_SECRET;
+    const REFRESH_TOKEN = c.env.GOOGLE_REFRESH_TOKEN;
+    if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
+      return c.json({ error: 'Google OAuth credentials not configured' }, 500);
     }
-    const body = await c.req.json();
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+
+    // アクセストークン取得
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'mcp-client-2025-04-04',
-      },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id:     CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        refresh_token: REFRESH_TOKEN,
+        grant_type:    'refresh_token',
+      }),
     });
-    const data = await res.json();
-    return c.json(data, res.status as any);
+    const tokenData: any = await tokenRes.json();
+    if (!tokenData.access_token) {
+      return c.json({ error: 'Failed to get access token', detail: tokenData }, 500);
+    }
+    const accessToken = tokenData.access_token;
+
+    // クエリパラメータ取得
+    const calendarId = c.req.query('calendarId') || '';
+    const timeMin    = c.req.query('timeMin') || new Date().toISOString();
+    const timeMax    = c.req.query('timeMax') || '';
+
+    // Google Calendar API呼び出し
+    const params = new URLSearchParams({
+      singleEvents: 'true',
+      orderBy:      'startTime',
+      maxResults:   '2500',
+      timeMin,
+      ...(timeMax ? { timeMax } : {}),
+    });
+    const calRes = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const calData: any = await calRes.json();
+    if (calData.error) {
+      return c.json({ error: calData.error.message || 'Calendar API error', detail: calData.error }, 500);
+    }
+
+    // dashboardが使いやすい形式に変換
+    const events = (calData.items || []).map((e: any) => ({
+      id:          e.id,
+      summary:     e.summary || '',
+      description: e.description || '',
+      created:     e.created,
+      start:       e.start,
+      end:         e.end,
+    }));
+    return c.json({ events });
   } catch (error: any) {
-    console.error('Calendar proxy error:', error);
-    return c.json({ error: error.message || 'Proxy error' }, 500);
+    console.error('Calendar API error:', error);
+    return c.json({ error: error.message || 'Calendar API error' }, 500);
   }
 });
 
