@@ -13,1811 +13,165 @@ app.use('/api/*', cors());
 // 静的ファイル配信
 app.use('/static/*', serveStatic({ root: './public' }));
 
-// ===== API Routes =====
+// ルートへのアクセスは /instagram にリダイレクト
+app.get('/', (c) => c.redirect('/instagram', 301));
 
 /**
- * Q&A一覧取得
+ * スタッフ一覧取得
  */
-app.get('/api/qa', async (c) => {
+app.get('/api/attendance/staff', async (c) => {
   const { DB } = c.env;
-  const { results } = await DB.prepare(
-    'SELECT * FROM qa_items WHERE is_active = 1 ORDER BY priority ASC, id DESC'
-  ).all();
-  return c.json(results);
-});
-
-/**
- * Q&A新規登録
- */
-app.post('/api/qa', async (c) => {
-  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
-  const data: QAItem = await c.req.json();
-
-  // D1にQ&Aを保存
-  const result = await DB.prepare(
-    `INSERT INTO qa_items (category, question, answer, keywords, priority, is_active)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(
-    data.category,
-    data.question,
-    data.answer,
-    data.keywords || '',
-    data.priority || 1,
-    data.is_active !== undefined ? data.is_active : 1
-  ).run();
-
-  const qaId = result.meta.last_row_id as number;
-
-  // 埋め込みベクトルを生成してVectorizeに保存
   try {
-    const embeddingText = `${data.category} ${data.question} ${data.answer} ${data.keywords || ''}`;
-    const embedding = await generateEmbedding(embeddingText, OPENAI_API_KEY);
-
-    await VECTORIZE.upsert([
-      {
-        id: `qa_${qaId}`,
-        values: embedding,
-        metadata: {
-          type: 'qa',
-          qa_id: qaId,
-          category: data.category,
-        },
-      },
+    const { results } = await DB.prepare(
+      'SELECT * FROM staff_members WHERE is_active = 1 ORDER BY display_order ASC, id ASC'
+    ).all();
+    return c.json(results);
+  } catch (error) {
+    // staff_membersテーブルがない場合はデフォルト返す
+    return c.json([
+      { id: 1, name: '坂口', display_order: 1 },
+      { id: 2, name: '小百合', display_order: 2 },
     ]);
-  } catch (error) {
-    console.error('Vectorize upsert error:', error);
-    // Vectorizeのエラーはログのみで処理続行
   }
-
-  return c.json({ id: qaId, ...data });
 });
 
 /**
- * Q&A更新
+ * スタッフ追加
  */
-app.put('/api/qa/:id', async (c) => {
-  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
-  const id = parseInt(c.req.param('id'));
-  const data: QAItem = await c.req.json();
-
-  // D1を更新
-  await DB.prepare(
-    `UPDATE qa_items 
-     SET category = ?, question = ?, answer = ?, keywords = ?, 
-         priority = ?, is_active = ?, last_updated = CURRENT_TIMESTAMP
-     WHERE id = ?`
-  ).bind(
-    data.category,
-    data.question,
-    data.answer,
-    data.keywords || '',
-    data.priority || 1,
-    data.is_active !== undefined ? data.is_active : 1,
-    id
-  ).run();
-
-  // Vectorizeを更新
-  try {
-    const embeddingText = `${data.category} ${data.question} ${data.answer} ${data.keywords || ''}`;
-    const embedding = await generateEmbedding(embeddingText, OPENAI_API_KEY);
-
-    await VECTORIZE.upsert([
-      {
-        id: `qa_${id}`,
-        values: embedding,
-        metadata: {
-          type: 'qa',
-          qa_id: id,
-          category: data.category,
-        },
-      },
-    ]);
-  } catch (error) {
-    console.error('Vectorize upsert error:', error);
-  }
-
-  return c.json({ id, ...data });
-});
-
-/**
- * Q&A削除
- */
-app.delete('/api/qa/:id', async (c) => {
-  const { DB, VECTORIZE } = c.env;
-  const id = parseInt(c.req.param('id'));
-
-  // 論理削除
-  await DB.prepare('UPDATE qa_items SET is_active = 0 WHERE id = ?').bind(id).run();
-
-  // Vectorizeからも削除
-  try {
-    await VECTORIZE.deleteByIds([`qa_${id}`]);
-  } catch (error) {
-    console.error('Vectorize delete error:', error);
-  }
-
-  return c.json({ success: true });
-});
-
-/**
- * Q&A一括インポート
- */
-app.post('/api/qa/bulk-import', async (c) => {
-  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
-  const { items } = await c.req.json();
-
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    return c.json({ error: 'インポートするデータがありません' }, 400);
-  }
-
-  let successCount = 0;
-  const errors: string[] = [];
-
-  for (const item of items) {
-    try {
-      // 必須項目のチェック
-      if (!item.category || !item.question || !item.answer) {
-        errors.push(`スキップ: 必須項目が不足しています (質問: ${item.question || '未設定'})`);
-        continue;
-      }
-
-      // D1にQ&Aを保存
-      const result = await DB.prepare(
-        `INSERT INTO qa_items (category, question, answer, keywords, priority, is_active)
-         VALUES (?, ?, ?, ?, ?, ?)`
-      ).bind(
-        item.category,
-        item.question,
-        item.answer,
-        item.keywords || '',
-        item.priority || 2,  // デフォルト: 中
-        item.is_active !== undefined ? item.is_active : 1
-      ).run();
-
-      const qaId = result.meta.last_row_id as number;
-
-      // 埋め込みベクトルを生成してVectorizeに保存
-      try {
-        const embeddingText = `${item.category} ${item.question} ${item.answer} ${item.keywords || ''}`;
-        const embedding = await generateEmbedding(embeddingText, OPENAI_API_KEY);
-
-        await VECTORIZE.upsert([
-          {
-            id: `qa_${qaId}`,
-            values: embedding,
-            metadata: {
-              type: 'qa',
-              qa_id: qaId,
-              category: item.category,
-            },
-          },
-        ]);
-      } catch (error) {
-        console.error('Vectorize upsert error for bulk import:', error);
-        // Vectorizeのエラーはログのみで処理続行
-      }
-
-      successCount++;
-    } catch (error: any) {
-      errors.push(`エラー: ${error.message} (質問: ${item.question || '未設定'})`);
-      console.error('Bulk import item error:', error);
-    }
-  }
-
-  return c.json({
-    inserted: successCount,
-    total: items.length,
-    errors: errors.length > 0 ? errors : undefined,
-  });
-});
-
-// ===== Web Source API Routes =====
-
-/**
- * Webソース一覧取得
- */
-app.get('/api/web', async (c) => {
+app.post('/api/attendance/staff', async (c) => {
   const { DB } = c.env;
-  const { results } = await DB.prepare(
-    'SELECT * FROM web_sources ORDER BY last_crawled DESC'
-  ).all();
-  return c.json(results);
-});
-
-/**
- * Webソース新規登録（クロール実行）
- */
-app.post('/api/web', async (c) => {
-  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
-  const { url } = await c.req.json();
-
-  if (!url || !url.startsWith('http')) {
-    return c.json({ error: '有効なURLを入力してください' }, 400);
-  }
-
-  try {
-    // Webページをクロール
-    const { title, content } = await scrapeWebPage(url);
-
-    // D1にWebソースを保存
-    const result = await DB.prepare(
-      `INSERT INTO web_sources (url, title, content, last_crawled)
-       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-       ON CONFLICT(url) DO UPDATE SET 
-         title = excluded.title,
-         content = excluded.content,
-         last_crawled = CURRENT_TIMESTAMP`
-    ).bind(url, title, content).run();
-
-    const webId = result.meta.last_row_id as number || 
-      (await DB.prepare('SELECT id FROM web_sources WHERE url = ?').bind(url).first<any>())?.id;
-
-    // 埋め込みベクトルを生成してVectorizeに保存
-    try {
-      const embeddingText = `${title} ${content}`;
-      const embedding = await generateEmbedding(embeddingText, OPENAI_API_KEY);
-
-      await VECTORIZE.upsert([
-        {
-          id: `web_${webId}`,
-          values: embedding,
-          metadata: {
-            type: 'web',
-            web_id: webId,
-            url: url,
-          },
-        },
-      ]);
-    } catch (error) {
-      console.error('Vectorize upsert error:', error);
-    }
-
-    return c.json({ id: webId, url, title, content: content.substring(0, 200) + '...' });
-  } catch (error: any) {
-    console.error('Web scraping error:', error);
-    return c.json({ error: `Webページの取得に失敗しました: ${error.message}` }, 500);
-  }
-});
-
-/**
- * Webソース削除
- */
-app.delete('/api/web/:id', async (c) => {
-  const { DB, VECTORIZE } = c.env;
-  const id = parseInt(c.req.param('id'));
-
-  await DB.prepare('DELETE FROM web_sources WHERE id = ?').bind(id).run();
-
-  // Vectorizeからも削除
-  try {
-    await VECTORIZE.deleteByIds([`web_${id}`]);
-  } catch (error) {
-    console.error('Vectorize delete error:', error);
-  }
-
-  return c.json({ success: true });
-});
-
-// ===== Template API Routes =====
-
-/**
- * テンプレート一覧取得
- */
-app.get('/api/templates', async (c) => {
-  const { DB } = c.env;
-  const { results } = await DB.prepare(
-    'SELECT * FROM templates WHERE is_active = 1 ORDER BY usage_count DESC, id DESC'
-  ).all();
-  return c.json(results);
-});
-
-/**
- * テンプレート新規登録
- */
-app.post('/api/templates', async (c) => {
-  const { DB } = c.env;
-  const { title, content, category } = await c.req.json();
+  const { name, display_order } = await c.req.json();
+  if (!name) return c.json({ error: 'スタッフ名は必須です' }, 400);
 
   const result = await DB.prepare(
-    `INSERT INTO templates (title, content, category)
-     VALUES (?, ?, ?)`
-  ).bind(title, content, category || null).run();
+    'INSERT INTO staff_members (name, display_order) VALUES (?, ?)'
+  ).bind(name, display_order || 99).run();
 
-  return c.json({ id: result.meta.last_row_id, title, content, category });
+  return c.json({ id: result.meta.last_row_id, name, display_order: display_order || 99 });
 });
 
 /**
- * テンプレート更新
+ * スタッフ削除
  */
-app.put('/api/templates/:id', async (c) => {
+app.delete('/api/attendance/staff/:id', async (c) => {
   const { DB } = c.env;
   const id = parseInt(c.req.param('id'));
-  const { title, content, category } = await c.req.json();
-
-  await DB.prepare(
-    `UPDATE templates 
-     SET title = ?, content = ?, category = ?, updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`
-  ).bind(title, content, category || null, id).run();
-
-  return c.json({ id, title, content, category });
-});
-
-/**
- * テンプレート削除
- */
-app.delete('/api/templates/:id', async (c) => {
-  const { DB } = c.env;
-  const id = parseInt(c.req.param('id'));
-
-  await DB.prepare('UPDATE templates SET is_active = 0 WHERE id = ?').bind(id).run();
-
+  await DB.prepare('UPDATE staff_members SET is_active = 0 WHERE id = ?').bind(id).run();
   return c.json({ success: true });
 });
 
 /**
- * テンプレート使用（使用回数カウント）
+ * 出勤記録一覧取得（月別）
  */
-app.post('/api/templates/:id/use', async (c) => {
+app.get('/api/attendance', async (c) => {
+  const { DB } = c.env;
+  const year = c.req.query('year') || new Date().getFullYear().toString();
+  const month = c.req.query('month') || String(new Date().getMonth() + 1).padStart(2, '0');
+  const staff_name = c.req.query('staff_name');
+
+  const monthStr = String(month).padStart(2, '0');
+  const startDate = `${year}-${monthStr}-01`;
+  const endDate = `${year}-${monthStr}-31`;
+
+  let query = 'SELECT * FROM attendance WHERE work_date BETWEEN ? AND ?';
+  const params: any[] = [startDate, endDate];
+
+  if (staff_name) {
+    query += ' AND staff_name = ?';
+    params.push(staff_name);
+  }
+  query += ' ORDER BY work_date ASC, staff_name ASC';
+
+  const { results } = await DB.prepare(query).bind(...params).all();
+  return c.json(results);
+});
+
+/**
+ * 出勤記録登録・更新（Upsert）
+ */
+app.post('/api/attendance', async (c) => {
+  const { DB } = c.env;
+  const data = await c.req.json();
+  const { staff_name, work_date, clock_in, clock_out, break_minutes, notes, status } = data;
+
+  if (!staff_name || !work_date) {
+    return c.json({ error: 'スタッフ名と勤務日は必須です' }, 400);
+  }
+
+  // 実労働時間を計算
+  let work_minutes: number | null = null;
+  if (clock_in && clock_out) {
+    const [inH, inM] = clock_in.split(':').map(Number);
+    const [outH, outM] = clock_out.split(':').map(Number);
+    const totalIn = inH * 60 + inM;
+    const totalOut = outH * 60 + outM;
+    work_minutes = totalOut - totalIn - (break_minutes || 0);
+    if (work_minutes < 0) work_minutes = 0;
+  }
+
+  const result = await DB.prepare(
+    `INSERT INTO attendance (staff_name, work_date, clock_in, clock_out, break_minutes, work_minutes, notes, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(staff_name, work_date) DO UPDATE SET
+       clock_in = excluded.clock_in,
+       clock_out = excluded.clock_out,
+       break_minutes = excluded.break_minutes,
+       work_minutes = excluded.work_minutes,
+       notes = excluded.notes,
+       status = excluded.status,
+       updated_at = CURRENT_TIMESTAMP`
+  ).bind(
+    staff_name,
+    work_date,
+    clock_in || null,
+    clock_out || null,
+    break_minutes || 0,
+    work_minutes,
+    notes || null,
+    status || 'present'
+  ).run();
+
+  return c.json({ id: result.meta.last_row_id, staff_name, work_date, clock_in, clock_out, break_minutes, work_minutes, notes, status });
+});
+
+/**
+ * 出勤記録削除
+ */
+app.delete('/api/attendance/:id', async (c) => {
   const { DB } = c.env;
   const id = parseInt(c.req.param('id'));
-
-  await DB.prepare(
-    `UPDATE templates 
-     SET usage_count = usage_count + 1, last_used = CURRENT_TIMESTAMP
-     WHERE id = ?`
-  ).bind(id).run();
-
+  await DB.prepare('DELETE FROM attendance WHERE id = ?').bind(id).run();
   return c.json({ success: true });
 });
 
 /**
- * 回答生成（RAG）
+ * 月次集計取得
  */
-app.post('/api/generate', async (c) => {
-  const { DB, VECTORIZE, OPENAI_API_KEY } = c.env;
-  const { query, tone = 'polite' } = await c.req.json();
-
-  if (!query || query.trim() === '') {
-    return c.json({ error: '問い合わせ内容を入力してください' }, 400);
-  }
-
-  try {
-    // 1. クエリの埋め込みベクトルを生成
-    const queryEmbedding = await generateEmbedding(query, OPENAI_API_KEY);
-
-    // 2. まずQ&Aから検索（優先）
-    let qaResults: SearchResult[] = [];
-    let webResults: SearchResult[] = [];
-    // 3. Q&Aデータから検索（Vectorize or フォールバック）
-    try {
-      const vectorResults = await VECTORIZE.query(queryEmbedding, {
-        topK: 10,
-        returnMetadata: true,
-      });
-
-      // Q&AとWebを分離
-      const qaMatches = vectorResults.matches.filter(m => m.metadata?.type === 'qa');
-      const webMatches = vectorResults.matches.filter(m => m.metadata?.type === 'web');
-
-      // Q&Aアイテムの詳細を取得
-      const qaIds = qaMatches
-        .filter((match) => match.score > 0.5)
-        .map((match) => match.metadata?.qa_id as number);
-
-      if (qaIds.length > 0) {
-        const placeholders = qaIds.map(() => '?').join(',');
-        const { results } = await DB.prepare(
-          `SELECT * FROM qa_items WHERE id IN (${placeholders}) AND is_active = 1`
-        ).bind(...qaIds).all();
-
-        qaResults = results.map((qa: any) => {
-          const match = qaMatches.find((m) => m.metadata?.qa_id === qa.id);
-          return {
-            qa_item: qa as QAItem,
-            score: match?.score || 0,
-            source_type: 'qa' as const,
-          };
-        }).sort((a, b) => b.score - a.score);
-      }
-
-      // Webソースの詳細を取得
-      const webIds = webMatches
-        .filter((match) => match.score > 0.5)
-        .map((match) => match.metadata?.web_id as number);
-
-      if (webIds.length > 0) {
-        const placeholders = webIds.map(() => '?').join(',');
-        const { results } = await DB.prepare(
-          `SELECT * FROM web_sources WHERE id IN (${placeholders})`
-        ).bind(...webIds).all();
-
-        webResults = results.map((web: any) => {
-          const match = webMatches.find((m) => m.metadata?.web_id === web.id);
-          return {
-            web_item: web,
-            score: match?.score || 0,
-            source_type: 'web' as const,
-          };
-        }).sort((a, b) => b.score - a.score);
-      }
-    } catch (error) {
-      console.error('Vectorize search error:', error);
-      // Vectorizeエラー時はフォールバック: Q&Aから全件取得して簡易スコアリング
-      const { results: qaData } = await DB.prepare(
-        `SELECT * FROM qa_items 
-         WHERE is_active = 1 
-         ORDER BY priority ASC, id ASC`
-      ).all();
-
-      // 簡易スコアリング: より単純で確実なキーワードマッチング
-      const queryLower = query.toLowerCase();
-      
-      qaResults = qaData
-        .map((qa: any) => {
-          const questionLower = qa.question.toLowerCase();
-          const answerLower = qa.answer.toLowerCase();
-          const keywordsLower = (qa.keywords || '').toLowerCase();
-          
-          let score = 0;
-          
-          // キーワードリストでマッチング
-          const keywords = keywordsLower.split(',').map(k => k.trim());
-          for (const keyword of keywords) {
-            if (keyword.length > 0 && queryLower.includes(keyword)) {
-              score = Math.max(score, 0.9);
-              break;
-            }
-          }
-          
-          // 質問文に部分一致
-          if (questionLower.includes(queryLower)) {
-            score = Math.max(score, 0.95);
-          } else {
-            // クエリの主要単語でマッチング（2文字以上）
-            const queryChars = Array.from(queryLower).filter(c => c.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\w]/));
-            let matchedChars = 0;
-            for (let i = 0; i < queryChars.length - 1; i++) {
-              const bigram = queryChars[i] + queryChars[i + 1];
-              if (questionLower.includes(bigram)) {
-                matchedChars += 2;
-              }
-            }
-            if (matchedChars > 2) {
-              score = Math.max(score, 0.7 + (matchedChars / queryChars.length) * 0.2);
-            }
-          }
-          
-          // 回答文に部分一致
-          if (score < 0.7 && answerLower.includes(queryLower)) {
-            score = Math.max(score, 0.75);
-          }
-          
-          // 最低スコア
-          if (score === 0) {
-            score = 0.3;
-          }
-          
-          return {
-            qa_item: qa as QAItem,
-            score: Math.min(0.95, score),
-            source_type: 'qa' as const,
-          };
-        })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
-
-      // Webソースもフォールバック検索
-      const { results: webData } = await DB.prepare(
-        `SELECT * FROM web_sources ORDER BY last_crawled DESC`
-      ).all();
-
-      webResults = webData
-        .map((web: any) => {
-          const titleLower = (web.title || '').toLowerCase();
-          const contentLower = (web.content || '').toLowerCase();
-
-          let score = 0;
-
-          // タイトルに含まれる
-          if (titleLower.includes(queryLower)) {
-            score = Math.max(score, 0.8);
-          }
-
-          // コンテンツに含まれる
-          if (contentLower.includes(queryLower)) {
-            score = Math.max(score, 0.7);
-          }
-
-          // bigram マッチング
-          if (score < 0.7) {
-            const queryChars = Array.from(queryLower).filter(c => c.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\w]/));
-            let matchedChars = 0;
-            for (let i = 0; i < queryChars.length - 1; i++) {
-              const bigram = queryChars[i] + queryChars[i + 1];
-              if (titleLower.includes(bigram) || contentLower.includes(bigram)) {
-                matchedChars += 2;
-              }
-            }
-            if (matchedChars > 2) {
-              score = Math.max(score, 0.5 + (matchedChars / queryChars.length) * 0.2);
-            }
-          }
-
-          if (score === 0) {
-            score = 0.3;
-          }
-
-          return {
-            web_item: web,
-            score: Math.min(0.85, score),
-            source_type: 'web' as const,
-          };
-        })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
-    }
-
-    // 4. Q&A優先、不足時はWebで補完
-    let searchResults: SearchResult[] = [];
-    const topQAResults = qaResults.slice(0, 3);
-
-    // Q&Aの最高スコアが0.7以上なら、Q&Aのみを使用
-    if (topQAResults.length > 0 && topQAResults[0].score >= 0.7) {
-      searchResults = topQAResults;
-    } 
-    // Q&Aが不十分な場合、Webソースも追加
-    else if (topQAResults.length > 0) {
-      searchResults = [...topQAResults, ...webResults.slice(0, 2)];
-    }
-    // Q&Aが見つからない場合、Webソースのみ
-    else {
-      searchResults = webResults.slice(0, 3);
-    }
-
-    // 5. 信頼度計算
-    const scores = searchResults.map((r) => r.score);
-    const confidence = calculateConfidence(scores);
-
-    // 6. 信頼度Cの場合は回答生成せず情報不足を返す
-    if (confidence === 'C') {
-      const sources: SourceReference[] = searchResults.slice(0, 3).map((result) => {
-        if (result.source_type === 'qa') {
-          return {
-            type: 'qa',
-            title: `${result.qa_item.category}: ${result.qa_item.question}`,
-            excerpt: result.qa_item.answer.substring(0, 120) + '...',
-            last_updated: result.qa_item.last_updated,
-            score: result.score,
-          };
-        } else {
-          const webItem = (result as any).web_item;
-          return {
-            type: 'web',
-            title: webItem.title,
-            excerpt: webItem.content.substring(0, 120) + '...',
-            url: webItem.url,
-            last_updated: webItem.last_crawled,
-            score: result.score,
-          };
-        }
-      });
-
-      return c.json({
-        answer: '',
-        sources,
-        confidence,
-        escalation_note: getEscalationNote(confidence),
-        tone,
-      });
-    }
-
-    // 7. コンテキスト作成（上位3件）
-    const topResults = searchResults.slice(0, 3);
-    const context = topResults
-      .map((result, index) => {
-        if (result.source_type === 'qa') {
-          return `【Q&A情報${index + 1}】(類似度: ${Math.round(result.score * 100)}%)
-カテゴリ: ${result.qa_item.category}
-質問: ${result.qa_item.question}
-回答: ${result.qa_item.answer}`;
-        } else {
-          const webItem = (result as any).web_item;
-          return `【Web情報${index + 1}】(類似度: ${Math.round(result.score * 100)}%)
-タイトル: ${webItem.title}
-URL: ${webItem.url}
-内容抜粋: ${webItem.content.substring(0, 500)}`;
-        }
-      })
-      .join('\n\n');
-
-    // 8. OpenAIで回答生成
-    const answer = await generateAnswer(query, context, tone, OPENAI_API_KEY);
-
-    // 9. ソース参照情報を整形
-    const sources: SourceReference[] = topResults.map((result) => {
-      if (result.source_type === 'qa') {
-        return {
-          type: 'qa',
-          title: `${result.qa_item.category}: ${result.qa_item.question}`,
-          excerpt: result.qa_item.answer.substring(0, 120) + '...',
-          last_updated: result.qa_item.last_updated,
-          score: result.score,
-        };
-      } else {
-        const webItem = (result as any).web_item;
-        return {
-          type: 'web',
-          title: webItem.title,
-          excerpt: webItem.content.substring(0, 120) + '...',
-          url: webItem.url,
-          last_updated: webItem.last_crawled,
-          score: result.score,
-        };
-      }
-    });
-
-    const response: GeneratedAnswer = {
-      answer,
-      sources,
-      confidence,
-      escalation_note: getEscalationNote(confidence),
-      tone,
-    };
-
-    return c.json(response);
-  } catch (error: any) {
-    console.error('Generate error:', error);
-    return c.json({ error: `エラーが発生しました: ${error.message}` }, 500);
-  }
-});
-
-/**
- * 選択したWebソースのみを使って回答生成
- */
-app.post('/api/generate-from-web', async (c) => {
-  try {
-    const { query, tone = 'polite', web_source_ids } = await c.req.json();
-    const { env } = c;
-
-    if (!query || !web_source_ids || !Array.isArray(web_source_ids) || web_source_ids.length === 0) {
-      return c.json({ error: '質問とWebソースIDが必要です' }, 400);
-    }
-
-    const OPENAI_API_KEY = env.OPENAI_API_KEY || '';
-
-    // 1. 選択されたWebソースのみを取得
-    const placeholders = web_source_ids.map(() => '?').join(',');
-    const webSourcesQuery = `
-      SELECT id, url, title, content, last_crawled
-      FROM web_sources
-      WHERE id IN (${placeholders}) AND is_active = 1
-    `;
-
-    const webSourcesResult = await env.DB.prepare(webSourcesQuery).bind(...web_source_ids).all();
-    const webSources = webSourcesResult.results as WebSource[];
-
-    if (webSources.length === 0) {
-      return c.json({ error: '選択されたWebソースが見つかりませんでした' }, 404);
-    }
-
-    // 2. 全てのWebソースを検索結果として使用（スコアは固定値）
-    const searchResults: SearchResult[] = webSources.map(web => ({
-      web_item: web,
-      score: 0.75, // 選択されたソースなので信頼度を与える
-      source_type: 'web' as const,
-    }));
-
-    // 3. 信頼度計算
-    const scores = searchResults.map((r) => r.score);
-    const confidence = calculateConfidence(scores);
-
-    // 4. コンテキスト作成
-    const context = searchResults
-      .map((result, index) => {
-        const webItem = result.web_item;
-        return `【Web情報${index + 1}】
-タイトル: ${webItem.title}
-URL: ${webItem.url}
-内容: ${webItem.content.substring(0, 1000)}`;
-      })
-      .join('\n\n');
-
-    // 5. OpenAIで回答生成
-    const answer = await generateAnswer(query, context, tone, OPENAI_API_KEY);
-
-    // 6. ソース参照情報を整形
-    const sources: SourceReference[] = searchResults.map((result) => {
-      const webItem = result.web_item;
-      return {
-        type: 'web',
-        title: webItem.title,
-        excerpt: webItem.content.substring(0, 120) + '...',
-        url: webItem.url,
-        last_updated: webItem.last_crawled,
-        score: result.score,
-      };
-    });
-
-    const response: GeneratedAnswer = {
-      answer,
-      sources,
-      confidence,
-      escalation_note: getEscalationNote(confidence),
-      tone,
-    };
-
-    return c.json(response);
-  } catch (error: any) {
-    console.error('Generate from web error:', error);
-    return c.json({ error: `エラーが発生しました: ${error.message}` }, 500);
-  }
-});
-
-// ===== Frontend Routes =====
-
-/**
- * トップページ（回答生成画面）
- */
-app.get('/', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>マカロニスタジオ Q&A回答ツール</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
-                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
-                    </div>
-                    <!-- デスクトップメニュー -->
-                    <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500 font-semibold">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
-                    </div>
-                    <!-- モバイルメニューボタン -->
-                    <div class="md:hidden flex items-center">
-                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-bars text-2xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-                <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
-                </div>
-            </div>
-        </nav>
-        <script>
-            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.toggle('hidden');
-            });
-        </script>
-
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
-            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
-                    <i class="fas fa-comments text-pink-500 mr-2"></i>
-                    問い合わせ内容入力
-                </h2>
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        問い合わせ内容
-                    </label>
-                    <textarea 
-                        id="queryInput" 
-                        rows="6" 
-                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm sm:text-base"
-                        placeholder="お客様からの問い合わせ内容をここに貼り付けてください..."
-                    ></textarea>
-                </div>
-
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        回答スタイル
-                    </label>
-                    <div class="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
-                        <label class="flex items-center">
-                            <input type="radio" name="tone" value="polite" checked class="mr-2">
-                            <span class="text-sm sm:text-base">丁寧（推奨）</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="radio" name="tone" value="casual" class="mr-2">
-                            <span class="text-sm sm:text-base">カジュアル</span>
-                        </label>
-                        <label class="flex items-center">
-                            <input type="radio" name="tone" value="brief" class="mr-2">
-                            <span class="text-sm sm:text-base">短文（コピペ用）</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button 
-                    id="generateBtn"
-                    class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 text-sm sm:text-base"
-                >
-                    <i class="fas fa-magic mr-2"></i>AIで回答生成
-                </button>
-            </div>
-
-            <div id="resultArea" class="hidden">
-                <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
-                        <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
-                            <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                            生成された回答
-                        </h2>
-                        <button 
-                            id="copyBtn"
-                            class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
-                        >
-                            <i class="fas fa-copy mr-2"></i>コピー
-                        </button>
-                    </div>
-                    
-                    <div id="confidenceBadge" class="mb-4"></div>
-                    <div id="escalationNote" class="mb-4"></div>
-                    <div id="answerText" class="prose max-w-none bg-gray-50 p-4 rounded-lg whitespace-pre-wrap"></div>
-                    
-                    <div class="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400">
-                        <p class="text-sm text-blue-700 mb-2">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            思った回答が得られませんでしたか？
-                        </p>
-                        <button 
-                            id="webSearchBtn"
-                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-                        >
-                            <i class="fas fa-globe mr-2"></i>Webで追加検索
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold text-gray-900">
-                            <i class="fas fa-book text-blue-500 mr-2"></i>
-                            参考情報（根拠）
-                        </h3>
-                        <a href="/templates" class="text-pink-500 hover:text-pink-600 font-semibold">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文を見る
-                        </a>
-                    </div>
-                    <div id="sourcesArea" class="space-y-4"></div>
-                </div>
-            </div>
-
-            <div id="loadingArea" class="hidden text-center py-12">
-                <i class="fas fa-spinner fa-spin text-4xl text-pink-500 mb-4"></i>
-                <p class="text-gray-600">AIが回答を生成中です...</p>
-            </div>
-        </main>
-
-        <!-- Webソース選択モーダル -->
-        <div id="webSourceModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
-            <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-6 border w-full max-w-3xl shadow-lg rounded-lg bg-white my-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg sm:text-xl font-bold text-gray-900">
-                        <i class="fas fa-globe text-blue-500 mr-2"></i>
-                        Webソースから追加情報を取得
-                    </h3>
-                    <button id="closeWebModal" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl sm:text-2xl"></i>
-                    </button>
-                </div>
-
-                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400">
-                    <p class="text-xs sm:text-sm text-blue-700">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        参照したいWebソースを選択してください。選択したソースの情報を使って回答を再生成します。
-                    </p>
-                </div>
-
-                <div id="webSourceList" class="space-y-3 mb-6 max-h-96 overflow-y-auto">
-                    <!-- Webソース一覧がここに表示されます -->
-                </div>
-
-                <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-                    <button 
-                        id="cancelWebSearch"
-                        class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition duration-200"
-                    >
-                        キャンセル
-                    </button>
-                    <button 
-                        id="executeWebSearch"
-                        class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-lg transition duration-200"
-                    >
-                        <i class="fas fa-search mr-2"></i>この情報で再生成
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js"></script>
-    </body>
-    </html>
-  `);
-});
-
-/**
- * 管理画面
- */
-app.get('/admin', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Q&A管理 - マカロニスタジオ</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
-                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
-                    </div>
-                    <!-- デスクトップメニュー -->
-                    <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-pink-500 font-semibold">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
-                    </div>
-                    <!-- モバイルメニューボタン -->
-                    <div class="md:hidden flex items-center">
-                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-bars text-2xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-                <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
-                </div>
-            </div>
-        </nav>
-        <script>
-            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.toggle('hidden');
-            });
-        </script>
-
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
-            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
-                        <i class="fas fa-list text-pink-500 mr-2"></i>
-                        Q&A一覧
-                    </h2>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <button 
-                            id="csvImportBtn"
-                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
-                        >
-                            <i class="fas fa-file-csv mr-2"></i>CSVインポート
-                        </button>
-                        <button 
-                            id="bulkImportBtn"
-                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
-                        >
-                            <i class="fas fa-file-import mr-2"></i>テキスト一括
-                        </button>
-                        <button 
-                            id="addBtn"
-                            class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
-                        >
-                            <i class="fas fa-plus mr-2"></i>新規追加
-                        </button>
-                    </div>
-                </div>
-
-                <div id="qaList" class="space-y-4">
-                    <!-- Q&Aアイテムがここに表示されます -->
-                </div>
-            </div>
-        </main>
-
-        <!-- 追加/編集モーダル -->
-        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
-            <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white my-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 id="modalTitle" class="text-lg sm:text-xl font-bold">Q&A追加</h3>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl sm:text-2xl"></i>
-                    </button>
-                </div>
-
-                <form id="qaForm" class="space-y-4">
-                    <input type="hidden" id="qaId">
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            カテゴリ <span class="text-red-500">*</span>
-                        </label>
-                        <select id="category" required class="w-full border border-gray-300 rounded-lg p-2">
-                            <option value="">選択してください</option>
-                            <option value="予約方法">予約方法</option>
-                            <option value="所要時間">所要時間</option>
-                            <option value="対象年齢">対象年齢</option>
-                            <option value="料金・七五三">料金・七五三</option>
-                            <option value="料金・スマッシュケーキ">料金・スマッシュケーキ</option>
-                            <option value="料金・ミルクバス">料金・ミルクバス</option>
-                            <option value="キャンセル">キャンセル</option>
-                            <option value="日程変更">日程変更</option>
-                            <option value="納品">納品</option>
-                            <option value="レタッチ">レタッチ</option>
-                            <option value="駐車場">駐車場</option>
-                            <option value="持ち物">持ち物</option>
-                            <option value="家族撮影">家族撮影</option>
-                            <option value="衣装">衣装</option>
-                            <option value="非対応">非対応</option>
-                            <option value="その他">その他</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            質問 <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="question" 
-                            required 
-                            class="w-full border border-gray-300 rounded-lg p-2"
-                            placeholder="例: 予約はどこからできますか？"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            回答 <span class="text-red-500">*</span>
-                        </label>
-                        <textarea 
-                            id="answer" 
-                            required 
-                            rows="5"
-                            class="w-full border border-gray-300 rounded-lg p-2"
-                            placeholder="例: ご予約はInstagramのDM、公式LINE、またはホームページのお問い合わせフォームから承っております。"
-                        ></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            検索用キーワード（カンマ区切り）
-                        </label>
-                        <input 
-                            type="text" 
-                            id="keywords" 
-                            class="w-full border border-gray-300 rounded-lg p-2"
-                            placeholder="例: 予約,Instagram,LINE,ホームページ"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            優先度
-                        </label>
-                        <select id="priority" class="w-full border border-gray-300 rounded-lg p-2">
-                            <option value="1">高</option>
-                            <option value="2">中</option>
-                            <option value="3">低</option>
-                        </select>
-                    </div>
-
-                    <div class="flex items-center">
-                        <input type="checkbox" id="isActive" checked class="mr-2">
-                        <label for="isActive" class="text-sm font-medium text-gray-700">有効</label>
-                    </div>
-
-                    <div class="flex justify-end space-x-3 pt-4">
-                        <button 
-                            type="button" 
-                            id="cancelBtn"
-                            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"
-                        >
-                            キャンセル
-                        </button>
-                        <button 
-                            type="submit"
-                            class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg"
-                        >
-                            保存
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 一括インポートモーダル -->
-        <div id="bulkImportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
-            <div class="relative top-4 sm:top-10 mx-auto p-4 sm:p-6 border w-full max-w-4xl shadow-lg rounded-lg bg-white my-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg sm:text-xl font-bold text-gray-900">
-                        <i class="fas fa-file-import text-blue-500 mr-2"></i>
-                        Q&A一括インポート
-                    </h3>
-                    <button id="closeBulkImport" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl sm:text-2xl"></i>
-                    </button>
-                </div>
-
-                <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400">
-                    <p class="text-xs sm:text-sm text-blue-700 mb-2">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        以下の形式で貼り付けてください：
-                    </p>
-                    <pre class="text-xs bg-white p-2 rounded mt-2 overflow-x-auto">カテゴリ: 予約方法
-質問: 予約はどこからできますか？
-回答: ホームページの予約フォームからお願いします
----
-カテゴリ: 料金
-質問: 料金を教えてください
-回答: 基本料金は○○円です</pre>
-                </div>
-
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Q&Aデータを貼り付け
-                    </label>
-                    <textarea 
-                        id="bulkImportText" 
-                        rows="12" 
-                        class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 font-mono text-sm"
-                        placeholder="カテゴリ: 予約方法
-質問: 予約はどこからできますか？
-回答: ホームページの予約フォームからお願いします
----
-カテゴリ: 料金
-質問: 料金を教えてください
-回答: 基本料金は○○円です"
-                    ></textarea>
-                </div>
-
-                <div class="mb-4">
-                    <button 
-                        id="parseDataBtn"
-                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-                    >
-                        <i class="fas fa-search mr-2"></i>データを解析してプレビュー
-                    </button>
-                </div>
-
-                <div id="previewArea" class="hidden">
-                    <h4 class="font-semibold text-gray-900 mb-3">
-                        <i class="fas fa-eye mr-2"></i>プレビュー（<span id="previewCount">0</span>件）
-                    </h4>
-                    <div id="previewList" class="space-y-3 mb-4 max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
-                        <!-- プレビューがここに表示されます -->
-                    </div>
-                    
-                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-                        <button 
-                            id="cancelBulkImport"
-                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition duration-200"
-                        >
-                            キャンセル
-                        </button>
-                        <button 
-                            id="executeBulkImport"
-                            class="px-6 py-2 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-lg transition duration-200"
-                        >
-                            <i class="fas fa-check mr-2"></i>この内容で一括登録
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- CSVインポートモーダル -->
-        <div id="csvImportModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
-            <div class="relative top-4 sm:top-10 mx-auto p-4 sm:p-6 border w-full max-w-6xl shadow-lg rounded-lg bg-white my-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg sm:text-xl font-bold text-gray-900">
-                        <i class="fas fa-file-csv text-green-500 mr-2"></i>
-                        CSVインポート（重複検出付き）
-                    </h3>
-                    <button id="closeCsvImport" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl sm:text-2xl"></i>
-                    </button>
-                </div>
-
-                <!-- ステップ1: ファイル選択 -->
-                <div id="csvStep1" class="mb-4">
-                    <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-400">
-                        <p class="text-xs sm:text-sm text-green-700 mb-2">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            CSV形式でQ&Aデータをインポートできます
-                        </p>
-                        <p class="text-xs text-green-600 mt-2">
-                            <strong>CSV形式:</strong> カテゴリ,質問,回答,キーワード<br>
-                            <strong>例:</strong> 料金,平日割引はありますか?,はい、平日は¥3,000割引です,平日割引,料金
-                        </p>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            <i class="fas fa-file-csv mr-2"></i>CSVファイルを選択（複数選択可）
-                        </label>
-                        <input 
-                            type="file" 
-                            id="csvFileInput" 
-                            accept=".csv"
-                            multiple
-                            class="block w-full text-sm text-gray-500
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-lg file:border-0
-                                file:text-sm file:font-semibold
-                                file:bg-green-50 file:text-green-700
-                                hover:file:bg-green-100"
-                        />
-                        <p class="mt-2 text-xs text-gray-500">
-                            <i class="fas fa-info-circle mr-1"></i>
-                            複数のLINE会話履歴CSVを一度に選択できます（最大20ファイル推奨）
-                        </p>
-                    </div>
-
-                    <!-- 進捗表示エリア -->
-                    <div id="csvProgress" class="mb-4 hidden">
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-medium text-blue-900">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>
-                                    ファイルを読み込み中...
-                                </span>
-                                <span class="text-sm text-blue-700" id="csvProgressText">0/0</span>
-                            </div>
-                            <div class="w-full bg-blue-200 rounded-full h-2">
-                                <div id="csvProgressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button 
-                        id="parseCsvBtn"
-                        class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200"
-                    >
-                        <i class="fas fa-search mr-2"></i>CSVを読み込んで重複チェック
-                    </button>
-                </div>
-
-                <!-- ステップ2: 重複検出結果と選抜 -->
-                <div id="csvStep2" class="hidden">
-                    <div class="mb-4 p-4 bg-blue-50 border-l-4 border-blue-400 flex items-center justify-between">
-                        <p class="text-xs sm:text-sm text-blue-700">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <span id="duplicateCount">0</span>件の重複が検出されました。インポートするQ&Aを選択してください。
-                        </p>
-                        <div class="flex space-x-2">
-                            <button 
-                                onclick="selectAllItems()"
-                                class="text-xs px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-                            >
-                                <i class="fas fa-check-double mr-1"></i>すべて選択
-                            </button>
-                            <button 
-                                onclick="deselectAllItems()"
-                                class="text-xs px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition"
-                            >
-                                <i class="fas fa-times mr-1"></i>すべて解除
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 重複グループ表示エリア -->
-                    <div id="duplicateGroups" class="space-y-4 mb-4 max-h-96 overflow-y-auto">
-                        <!-- 重複グループがここに表示されます -->
-                    </div>
-
-                    <!-- ユニークデータプレビュー -->
-                    <div class="mb-4">
-                        <div id="uniqueList" class="max-h-64 overflow-y-auto bg-gray-50 p-4 rounded-lg">
-                            <!-- ユニークなQ&Aがここに表示されます -->
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-                        <button 
-                            id="cancelCsvImport"
-                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition duration-200"
-                        >
-                            キャンセル
-                        </button>
-                        <button 
-                            id="executeCsvImport"
-                            class="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg transition duration-200"
-                        >
-                            <i class="fas fa-check mr-2"></i>選択した内容でインポート（<span id="finalCount">0</span>件）
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <!-- LINE CSV パーサーを先に読み込む -->
-        <script src="/static/line-parser.js"></script>
-        <!-- admin.jsは line-parser.js の後に読み込む -->
-        <script>
-          // line-parser.jsの読み込み確認
-          window.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded - Checking parseLINECSV...');
-            console.log('window.parseLINECSV exists:', typeof window.parseLINECSV);
-            
-            if (typeof window.parseLINECSV !== 'function') {
-              console.error('⚠️ WARNING: parseLINECSV is not loaded!');
-              console.error('Attempting to reload line-parser.js...');
-              
-              // 動的に再読み込みを試みる
-              const script = document.createElement('script');
-              script.src = '/static/line-parser.js';
-              script.onload = function() {
-                console.log('✅ line-parser.js reloaded successfully');
-                console.log('parseLINECSV now available:', typeof window.parseLINECSV);
-              };
-              script.onerror = function() {
-                console.error('❌ Failed to reload line-parser.js');
-              };
-              document.head.appendChild(script);
-            } else {
-              console.log('✅ parseLINECSV loaded successfully');
-            }
-          });
-        </script>
-        <script src="/static/admin.js"></script>
-    </body>
-    </html>
-  `);
-});
-
-/**
- * Web管理画面
- */
-app.get('/web-admin', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Web管理 - マカロニスタジオ</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
-                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
-                    </div>
-                    <!-- デスクトップメニュー -->
-                    <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-pink-500 font-semibold">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
-                    </div>
-                    <!-- モバイルメニューボタン -->
-                    <div class="md:hidden flex items-center">
-                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-bars text-2xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-                <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
-                </div>
-            </div>
-        </nav>
-        <script>
-            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.toggle('hidden');
-            });
-        </script>
-
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
-            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-4">
-                    <i class="fas fa-globe text-pink-500 mr-2"></i>
-                    Webソース管理
-                </h2>
-                
-                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
-                    <p class="text-xs sm:text-sm text-blue-700">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        参照したいWebページのURLを登録すると、内容を自動的に取り込んでQ&A回答の参考情報として使用します。
-                    </p>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-2 mb-6">
-                    <input 
-                        type="url" 
-                        id="urlInput" 
-                        placeholder="https://example.com" 
-                        class="flex-1 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-pink-500 text-sm sm:text-base"
-                    />
-                    <button 
-                        id="addBtn"
-                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-lg transition duration-200 text-sm sm:text-base"
-                    >
-                        <i class="fas fa-plus mr-2"></i>追加
-                    </button>
-                </div>
-
-                <div id="loadingArea" class="hidden text-center py-4">
-                    <i class="fas fa-spinner fa-spin text-2xl text-pink-500 mb-2"></i>
-                    <p class="text-gray-600">Webページを取得中...</p>
-                </div>
-
-                <div id="webList" class="space-y-4">
-                    <!-- Webソースがここに表示されます -->
-                </div>
-            </div>
-        </main>
-
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/web-admin.js"></script>
-    </body>
-    </html>
-  `);
-});
-
-/**
- * テンプレート管理画面
- */
-app.get('/templates', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>定型文管理 - マカロニスタジオ</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    </head>
-    <body class="bg-gray-50">
-        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
-                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
-                    </div>
-                    <!-- デスクトップメニュー -->
-                    <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/templates" class="text-pink-500 font-semibold">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
-                    </div>
-                    <!-- モバイルメニューボタン -->
-                    <div class="md:hidden flex items-center">
-                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-bars text-2xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-                <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
-                </div>
-            </div>
-        </nav>
-        <script>
-            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.toggle('hidden');
-            });
-        </script>
-
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pt-20">
-            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 space-y-2 sm:space-y-0">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900">
-                        <i class="fas fa-clipboard-list text-pink-500 mr-2"></i>
-                        よく使う返信テンプレート
-                    </h2>
-                    <button 
-                        id="addBtn"
-                        class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 text-sm sm:text-base"
-                    >
-                        <i class="fas fa-plus mr-2"></i>新規追加
-                    </button>
-                </div>
-
-                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
-                    <p class="text-sm text-blue-700">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        頻繁に使う返信内容をテンプレートとして登録しておくと、ワンクリックでコピーできます。
-                    </p>
-                </div>
-
-                <!-- 検索フィルター -->
-                <div class="mb-6">
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="タイトル、カテゴリ、本文で検索..." 
-                            class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                        >
-                        <i class="fas fa-search absolute left-4 top-4 text-gray-400"></i>
-                    </div>
-                </div>
-
-                <div id="templateList" class="space-y-4">
-                    <!-- テンプレートがここに表示されます -->
-                </div>
-            </div>
-        </main>
-
-        <!-- 追加/編集モーダル -->
-        <div id="modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 px-4">
-            <div class="relative top-4 sm:top-20 mx-auto p-4 sm:p-5 border w-full max-w-2xl shadow-lg rounded-lg bg-white my-4">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 id="modalTitle" class="text-lg sm:text-xl font-bold">テンプレート追加</h3>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl sm:text-2xl"></i>
-                    </button>
-                </div>
-
-                <form id="templateForm" class="space-y-4">
-                    <input type="hidden" id="templateId">
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            タイトル <span class="text-red-500">*</span>
-                        </label>
-                        <input 
-                            type="text" 
-                            id="title" 
-                            required 
-                            class="w-full border border-gray-300 rounded-lg p-2"
-                            placeholder="例: 営業時間のご案内"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            カテゴリ（任意）
-                        </label>
-                        <input 
-                            type="text" 
-                            id="category" 
-                            class="w-full border border-gray-300 rounded-lg p-2"
-                            placeholder="例: 営業時間、料金、予約"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            返信内容 <span class="text-red-500">*</span>
-                        </label>
-                        <textarea 
-                            id="content" 
-                            required 
-                            rows="10"
-                            class="w-full border border-gray-300 rounded-lg p-2"
-                            placeholder="お客様への返信内容をここに入力してください..."
-                        ></textarea>
-                    </div>
-
-                    <div class="flex justify-end space-x-3 pt-4">
-                        <button 
-                            type="button" 
-                            id="cancelBtn"
-                            class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg"
-                        >
-                            キャンセル
-                        </button>
-                        <button 
-                            type="submit"
-                            class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded-lg"
-                        >
-                            保存
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/templates.js"></script>
-    </body>
-    </html>
-  `);
+app.get('/api/attendance/summary', async (c) => {
+  const { DB } = c.env;
+  const year = c.req.query('year') || new Date().getFullYear().toString();
+  const month = c.req.query('month') || String(new Date().getMonth() + 1).padStart(2, '0');
+
+  const monthStr = String(month).padStart(2, '0');
+  const startDate = `${year}-${monthStr}-01`;
+  const endDate = `${year}-${monthStr}-31`;
+
+  const { results } = await DB.prepare(
+    `SELECT 
+       staff_name,
+       COUNT(*) as total_days,
+       SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present_days,
+       SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent_days,
+       SUM(CASE WHEN status = 'late' THEN 1 ELSE 0 END) as late_days,
+       SUM(CASE WHEN status = 'half_day' THEN 1 ELSE 0 END) as half_days,
+       SUM(work_minutes) as total_work_minutes
+     FROM attendance
+     WHERE work_date BETWEEN ? AND ?
+     GROUP BY staff_name
+     ORDER BY staff_name`
+  ).bind(startDate, endDate).all();
+
+  return c.json(results);
 });
 
 /**
@@ -1839,7 +193,7 @@ app.get('/instagram', (c) => {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
             
-            .container {
+            .insta-container {
                 max-width: 900px;
                 margin: 0 auto;
                 padding: 40px 20px;
@@ -1989,7 +343,7 @@ app.get('/instagram', (c) => {
             }
             
             @media (max-width: 768px) {
-                .container {
+                .insta-container {
                     padding: 20px 15px;
                 }
                 
@@ -2014,30 +368,11 @@ app.get('/instagram', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-pink-500 font-semibold">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
+                        <a href="/instagram" class="text-pink-500 font-bold"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -2050,31 +385,13 @@ app.get('/instagram', (c) => {
             <!-- モバイルメニュー -->
             <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
                 <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
+            </div>
             </div>
         </nav>
         <script>
@@ -2091,7 +408,7 @@ app.get('/instagram', (c) => {
             });
         </script>
         
-        <div class="container pt-20">
+        <div class="insta-container pt-20">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #FF69B4;">
@@ -2237,7 +554,7 @@ app.get('/blog', (c) => {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
             
-            .container {
+            .blog-container {
                 max-width: 1000px;
                 margin: 0 auto;
                 padding: 40px 20px;
@@ -2363,7 +680,7 @@ app.get('/blog', (c) => {
             }
             
             @media (max-width: 768px) {
-                .container {
+                .blog-container {
                     padding: 20px 15px;
                 }
             }
@@ -2380,9 +697,6 @@ app.get('/blog', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div id="desktopNav" style="display: none; align-items: center; gap: 1rem;">
-                        <a href="/" style="color: #374151; text-decoration: none;">
-                            <i class="fas fa-home" style="margin-right: 0.5rem;"></i>回答生成
-                        </a>
                         <a href="/instagram" style="color: #374151; text-decoration: none;">
                             <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
                         </a>
@@ -2391,12 +705,6 @@ app.get('/blog', (c) => {
                         </a>
                         <a href="/staff-board" style="color: #374151; text-decoration: none;">
                             <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>スタッフ連絡板
-                        </a>
-                        <a href="/templates" style="color: #374151; text-decoration: none;">
-                            <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
-                        </a>
-                        <a href="/admin" style="color: #374151; text-decoration: none;">
-                            <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
                         </a>
                         <a href="/dashboard" style="color: #374151; text-decoration: none;">
                             <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>ダッシュボード
@@ -2412,9 +720,6 @@ app.get('/blog', (c) => {
             </div>
             <!-- モバイルメニュー -->
             <div id="mobileNavMenu" style="display: none; border-top: 1px solid #e5e7eb; padding: 0.5rem;">
-                <a href="/" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
-                    <i class="fas fa-home" style="margin-right: 0.5rem;"></i>回答生成
-                </a>
                 <a href="/instagram" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
                     <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
                 </a>
@@ -2423,12 +728,6 @@ app.get('/blog', (c) => {
                 </a>
                 <a href="/staff-board" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
                     <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>スタッフ連絡板
-                </a>
-                <a href="/templates" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
-                    <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>定型文
-                </a>
-                <a href="/admin" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
-                    <i class="fas fa-cog" style="margin-right: 0.5rem;"></i>Q&A管理
                 </a>
                 <a href="/dashboard" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
                     <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>ダッシュボード
@@ -2456,7 +755,7 @@ app.get('/blog', (c) => {
             window.addEventListener('resize', updateNav);
         </script>
         
-        <div class="container pt-20">
+        <div class="blog-container pt-20">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #3b82f6;">
@@ -2749,12 +1048,6 @@ app.get('/staff-board', (c) => {
                     
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex space-x-6">
-                        <a href="/" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fas fa-comments mr-2"></i>回答生成
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fas fa-file-alt mr-2"></i>定型文
-                        </a>
                         <a href="/instagram" class="text-gray-700 hover:text-pink-400 transition flex items-center">
                             <i class="fab fa-instagram mr-2"></i>Instagram投稿
                         </a>
@@ -2763,12 +1056,6 @@ app.get('/staff-board', (c) => {
                         </a>
                         <a href="/staff-board" class="text-pink-500 font-semibold flex items-center">
                             <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fas fa-globe mr-2"></i>Web管理
                         </a>
                         <a href="/dashboard" class="text-gray-700 hover:text-pink-400 transition flex items-center">
                             <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
@@ -2782,15 +1069,14 @@ app.get('/staff-board', (c) => {
                 </div>
                 
                 <!-- モバイルメニュー -->
-                <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
-                    <a href="/" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-comments mr-2"></i>回答生成</a>
-                    <a href="/templates" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-file-alt mr-2"></i>定型文</a>
-                    <a href="/instagram" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
-                    <a href="/blog" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
-                    <a href="/staff-board" class="block py-2 text-pink-500 font-semibold"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
-                    <a href="/admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
-                    <a href="/web-admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-globe mr-2"></i>Web管理</a>
-                    <a href="/dashboard" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+                <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+                    <div class="px-2 pt-2 pb-3 space-y-1">
+                        <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                        <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                        <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                        <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+                    </div>
                 </div>
             </nav>
         </header>
@@ -4112,28 +2398,22 @@ app.get('/dashboard', (c) => {
 <body>
   <nav class="db-nav">
     <div class="db-nav-inner">
-      <a class="db-nav-logo" href="/">&#128247; マカロニスタジオ Q&A</a>
+      <a class="db-nav-logo" href="/instagram">&#128247; マカロニスタジオ</a>
       <div class="db-nav-links">
-        <a href="/">回答生成</a>
         <a href="/instagram">Instagram投稿</a>
         <a href="/blog">ブログ原稿</a>
         <a href="/staff-board">スタッフ連絡板</a>
-        <a href="/templates">定型文</a>
-        <a href="/admin">Q&A管理</a>
-        <a href="/web-admin">Web管理</a>
+        <a href="/attendance">出勤管理</a>
         <a href="/dashboard" class="active">ダッシュボード</a>
       </div>
       <button class="db-menu-btn" id="mobileMenuBtn">&#9776;</button>
     </div>
   </nav>
   <div class="db-mobile-menu" id="mobileMenu">
-    <a href="/">回答生成</a>
     <a href="/instagram">Instagram投稿</a>
     <a href="/blog">ブログ原稿</a>
     <a href="/staff-board">スタッフ連絡板</a>
-    <a href="/templates">定型文</a>
-    <a href="/admin">Q&A管理</a>
-    <a href="/web-admin">Web管理</a>
+    <a href="/attendance">出勤管理</a>
     <a href="/dashboard" class="active">ダッシュボード</a>
   </div>
   <script>
@@ -4144,6 +2424,724 @@ app.get('/dashboard', (c) => {
   </script>
   <div id="dashboard-root"></div>
   <script src="/static/dashboard.bundle.js"></script>
+</body>
+</html>`);
+});
+
+/**
+ * 出勤管理ページ
+ */
+app.get('/attendance', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出勤管理 | マカロニスタジオ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    .status-present  { background:#dcfce7; color:#166534; }
+    .status-absent   { background:#fee2e2; color:#991b1b; }
+    .status-late     { background:#fef9c3; color:#854d0e; }
+    .status-half_day { background:#dbeafe; color:#1e40af; }
+    .status-holiday  { background:#f3f4f6; color:#6b7280; }
+    .table-cell { padding:5px 6px; border:1px solid #e5e7eb; text-align:center; font-size:12px; }
+    .table-head { background:#fdf2f8; font-weight:600; font-size:11px; }
+    .today-col { background:#fff7ed !important; }
+    /* モーダル */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px; }
+    .modal-box { background:#fff;border-radius:12px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden; }
+    .modal-header { background:linear-gradient(135deg,#ec4899,#f97316);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center; }
+    .modal-body { padding:18px; }
+    .form-label { display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px; }
+    .form-input { width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:14px;outline:none;transition:.2s; }
+    .form-input:focus { border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,.12); }
+    /* 出勤表セル */
+    .att-cell { min-width:72px;padding:4px;border:1px solid #e5e7eb;cursor:pointer;transition:.15s;vertical-align:top; }
+    .att-cell:hover { background:#fdf2f8; }
+    .att-cell.today { background:#fff7ed; }
+    .att-cell.weekend { background:#f9fafb; }
+    .att-cell .time-text { font-size:10px;color:#6b7280;line-height:1.3; }
+    .att-name-cell { min-width:72px;background:#f9fafb;font-weight:600;font-size:13px;padding:8px 6px;border:1px solid #e5e7eb;white-space:nowrap;position:sticky;left:0;z-index:1; }
+    .att-head-cell { background:#fdf2f8;font-size:11px;font-weight:700;padding:6px 4px;border:1px solid #e5e7eb;text-align:center; }
+  </style>
+</head>
+<body class="bg-gray-50">
+
+<!-- ナビゲーション -->
+<nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+      <div class="flex items-center">
+        <i class="fas fa-camera text-pink-500 text-xl mr-2"></i>
+        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
+      </div>
+      <div class="hidden md:flex items-center space-x-4">
+        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+        <a href="/attendance" class="text-pink-500 font-bold"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
+      </div>
+      <div class="md:hidden flex items-center">
+        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500"><i class="fas fa-bars text-2xl"></i></button>
+      </div>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+      <div class="px-2 pt-2 pb-3 space-y-1">
+          <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+          <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+          <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+          <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+          <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+      </div>
+  </div>
+  </div>
+</nav>
+<script>
+  document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+    document.getElementById('mobileMenu').classList.toggle('hidden');
+  });
+</script>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
+
+  <!-- ヘッダー＆タブドロップダウン -->
+  <div class="flex items-center justify-between mb-4 gap-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-clock text-pink-500 mr-2"></i>出勤管理</h2>
+      <p class="text-sm text-gray-500 mt-0.5">セルをクリックして直接入力できます</p>
+    </div>
+    <!-- タブドロップダウン -->
+    <div class="relative" id="tab-dropdown-wrap">
+      <button id="tab-dropdown-btn" onclick="toggleTabMenu()"
+        class="flex items-center gap-2 px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold text-sm rounded-xl shadow transition select-none">
+        <span id="tab-current-icon"><i class="fas fa-table"></i></span>
+        <span id="tab-current-label">出勤表</span>
+        <i class="fas fa-chevron-down text-xs ml-1 transition-transform duration-200" id="tab-chevron"></i>
+      </button>
+      <!-- ドロップダウンメニュー -->
+      <div id="tab-menu"
+        class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+        style="animation:fadeDown .15s ease">
+        <button onclick="showTab('table')" data-tab="table"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-table w-4 text-center"></i>出勤表
+        </button>
+        <button onclick="showTab('record')" data-tab="record"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-list w-4 text-center"></i>記録一覧
+        </button>
+        <button onclick="showTab('summary')" data-tab="summary"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-chart-bar w-4 text-center"></i>月次集計
+        </button>
+        <button onclick="showTab('staff')" data-tab="staff"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-users w-4 text-center"></i>従業員管理
+        </button>
+      </div>
+    </div>
+  </div>
+  <style>
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .tab-menu-item.active { background:#fdf2f8; color:#ec4899; font-weight:700; }
+  </style>
+
+  <!-- 月選択バー -->
+  <div class="bg-white rounded-lg shadow p-3 mb-4 flex flex-wrap items-center gap-3">
+    <label class="text-sm font-medium text-gray-700">表示月：</label>
+    <select id="yearSel" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-pink-500 focus:border-pink-500"></select>
+    <span class="text-gray-500 text-sm">年</span>
+    <select id="monthSel" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-pink-500 focus:border-pink-500">
+      <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
+      <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
+      <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
+      <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+    </select>
+    <span class="text-gray-500 text-sm">月</span>
+    <button onclick="loadAll()" class="bg-pink-500 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-pink-600 transition">
+      <i class="fas fa-sync mr-1"></i>更新
+    </button>
+    <div class="ml-auto flex gap-2 text-xs flex-wrap">
+      <span class="px-2 py-1 rounded status-present">出勤</span>
+      <span class="px-2 py-1 rounded status-absent">欠勤</span>
+      <span class="px-2 py-1 rounded status-late">遅刻</span>
+      <span class="px-2 py-1 rounded status-half_day">半休</span>
+      <span class="px-2 py-1 rounded status-holiday">休日</span>
+    </div>
+  </div>
+
+  <!-- ===== 出勤表タブ ===== -->
+  <div id="panel-table" class="tab-panel">
+    <div class="bg-white rounded-lg shadow">
+      <div class="p-4 border-b flex items-center justify-between">
+        <h3 class="font-bold text-gray-800"><i class="fas fa-table text-pink-500 mr-2"></i>出勤表 — セルをクリックして入力</h3>
+        <span class="text-xs text-gray-400"><i class="fas fa-info-circle mr-1"></i>空白セルをクリックで新規入力、記録済みセルは編集</span>
+      </div>
+      <div class="overflow-x-auto p-2">
+        <table id="attendance-table" class="border-collapse" style="min-width:600px"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 記録一覧タブ ===== -->
+  <div id="panel-record" class="tab-panel hidden">
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-list text-pink-500 mr-2"></i>今月の記録一覧</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-pink-50">
+              <th class="table-cell">日付</th>
+              <th class="table-cell">スタッフ</th>
+              <th class="table-cell">ステータス</th>
+              <th class="table-cell">出勤</th>
+              <th class="table-cell">退勤</th>
+              <th class="table-cell">休憩</th>
+              <th class="table-cell">実働</th>
+              <th class="table-cell">備考</th>
+              <th class="table-cell">操作</th>
+            </tr>
+          </thead>
+          <tbody id="record-list"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 月次集計タブ ===== -->
+  <div id="panel-summary" class="tab-panel hidden">
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-chart-bar text-pink-500 mr-2"></i>月次集計</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-pink-50">
+              <th class="table-cell">スタッフ</th>
+              <th class="table-cell">出勤日数</th>
+              <th class="table-cell">欠勤日数</th>
+              <th class="table-cell">遅刻日数</th>
+              <th class="table-cell">半休日数</th>
+              <th class="table-cell">総実働時間</th>
+            </tr>
+          </thead>
+          <tbody id="summary-body"></tbody>
+        </table>
+      </div>
+      <div id="summary-empty" class="text-center text-gray-400 py-8 hidden">
+        <i class="fas fa-inbox text-4xl mb-2 block"></i>データがありません
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 従業員管理タブ ===== -->
+  <div id="panel-staff" class="tab-panel hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 従業員追加 -->
+      <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-user-plus text-pink-500 mr-2"></i>従業員を追加</h3>
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">名前 <span class="text-red-500">*</span></label>
+          <input type="text" id="new-staff-name" placeholder="例：田中" maxlength="20"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">表示順（数字が小さいほど先頭）</label>
+          <input type="number" id="new-staff-order" value="10" min="1" max="99"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+        </div>
+        <button onclick="addStaff()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
+          <i class="fas fa-plus mr-2"></i>追加する
+        </button>
+        <div id="staff-add-msg" class="mt-3 text-sm hidden"></div>
+      </div>
+
+      <!-- 従業員一覧 -->
+      <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-users text-pink-500 mr-2"></i>従業員一覧</h3>
+        <div id="staff-list-panel" class="space-y-2"></div>
+        <p class="text-xs text-gray-400 mt-3"><i class="fas fa-info-circle mr-1"></i>削除しても過去の記録は保持されます</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== 出退勤入力モーダル ===== -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="text-xs opacity-80 mb-0.5" id="modal-subtitle"></div>
+        <div class="font-bold text-lg" id="modal-title"></div>
+      </div>
+      <button onclick="closeModal()" class="text-white opacity-80 hover:opacity-100 text-xl leading-none">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="form-label">ステータス</label>
+          <select id="m-status" class="form-input">
+            <option value="present">✅ 出勤</option>
+            <option value="absent">❌ 欠勤</option>
+            <option value="late">⚠️ 遅刻</option>
+            <option value="half_day">🔵 半休</option>
+            <option value="holiday">🔘 休日</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">休憩時間（分）</label>
+          <input type="number" id="m-break" min="0" max="480" step="15" value="60" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">出勤時刻</label>
+          <input type="time" id="m-clock-in" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">退勤時刻</label>
+          <input type="time" id="m-clock-out" class="form-input">
+        </div>
+      </div>
+      <!-- 実働時間プレビュー -->
+      <div id="work-preview" class="bg-pink-50 rounded-lg px-3 py-2 text-sm text-pink-700 font-semibold mb-3 hidden">
+        <i class="fas fa-clock mr-1"></i>実働時間：<span id="work-preview-text"></span>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">備考</label>
+        <input type="text" id="m-notes" placeholder="メモ（任意）" maxlength="100" class="form-input">
+      </div>
+      <div class="flex gap-2">
+        <button onclick="saveModal()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
+          <i class="fas fa-save mr-1"></i>保存
+        </button>
+        <button onclick="deleteModal()" id="modal-delete-btn" class="bg-red-100 hover:bg-red-200 text-red-600 font-bold py-2.5 px-4 rounded-lg text-sm transition hidden">
+          <i class="fas fa-trash mr-1"></i>削除
+        </button>
+        <button onclick="closeModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-sm transition">
+          キャンセル
+        </button>
+      </div>
+      <div id="modal-msg" class="mt-2 text-sm hidden"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 状態管理 =====
+let staffList = [];
+let attendanceData = [];
+let currentYear, currentMonth;
+let modalContext = { staffName: '', date: '', recordId: null };
+
+// ===== 初期化 =====
+(function init() {
+  const now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+
+  const ySel = document.getElementById('yearSel');
+  for (let y = currentYear - 2; y <= currentYear + 1; y++) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if (y === currentYear) opt.selected = true;
+    ySel.appendChild(opt);
+  }
+  document.getElementById('monthSel').value = currentMonth;
+
+  // 出勤時刻が変わったらリアルタイム計算
+  ['m-clock-in','m-clock-out','m-break'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateWorkPreview);
+  });
+
+  loadStaff().then(() => loadAll());
+})();
+
+// ===== タブ定義 =====
+const TAB_META = {
+  table:   { icon: 'fas fa-table',     label: '出勤表' },
+  record:  { icon: 'fas fa-list',      label: '記録一覧' },
+  summary: { icon: 'fas fa-chart-bar', label: '月次集計' },
+  staff:   { icon: 'fas fa-users',     label: '従業員管理' },
+};
+
+// ===== タブドロップダウン開閉 =====
+function toggleTabMenu() {
+  const menu = document.getElementById('tab-menu');
+  const chevron = document.getElementById('tab-chevron');
+  const isHidden = menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !isHidden);
+  chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+// 外クリックで閉じる
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('tab-dropdown-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('tab-menu').classList.add('hidden');
+    document.getElementById('tab-chevron').style.transform = '';
+  }
+});
+
+// ===== タブ切替 =====
+function showTab(tab) {
+  ['table','record','summary','staff'].forEach(t => {
+    document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
+    // メニューアイテムのアクティブ表示
+    const item = document.querySelector(\`.tab-menu-item[data-tab="\${t}"]\`);
+    if (item) item.classList.toggle('active', t === tab);
+  });
+
+  // ボタンラベル更新
+  const meta = TAB_META[tab];
+  document.getElementById('tab-current-icon').innerHTML = \`<i class="\${meta.icon}"></i>\`;
+  document.getElementById('tab-current-label').textContent = meta.label;
+
+  // メニューを閉じる
+  document.getElementById('tab-menu').classList.add('hidden');
+  document.getElementById('tab-chevron').style.transform = '';
+}
+
+// ===== スタッフ読み込み =====
+async function loadStaff() {
+  const res = await fetch('/api/attendance/staff');
+  staffList = (await res.json()).filter(s => s.name !== '全員');
+  renderStaffList();
+}
+
+// ===== データ全読み込み =====
+async function loadAll() {
+  const year = document.getElementById('yearSel').value;
+  const month = document.getElementById('monthSel').value;
+  currentYear = year; currentMonth = month;
+  const res = await fetch(\`/api/attendance?year=\${year}&month=\${month}\`);
+  attendanceData = await res.json();
+  renderAttendanceTable();
+  renderRecordList();
+  renderSummary();
+}
+
+// ===== ステータス表示 =====
+const STATUS_LABEL = { present:'出勤', absent:'欠勤', late:'遅刻', half_day:'半休', holiday:'休日' };
+const STATUS_ICON  = { present:'✅', absent:'❌', late:'⚠️', half_day:'🔵', holiday:'🔘' };
+function statusLabel(s){ return STATUS_LABEL[s] || s; }
+function statusClass(s){ return 'status-' + (s || 'present'); }
+
+// ===== 実働時間フォーマット =====
+function fmtMinutes(m) {
+  if (!m && m !== 0) return '-';
+  const h = Math.floor(m / 60), min = m % 60;
+  return h + 'h' + (min > 0 ? min + 'm' : '');
+}
+function calcWorkMinutes(inVal, outVal, breakMin) {
+  if (!inVal || !outVal) return null;
+  const [ih, im] = inVal.split(':').map(Number);
+  const [oh, om] = outVal.split(':').map(Number);
+  const w = (oh * 60 + om) - (ih * 60 + im) - (breakMin || 0);
+  return w > 0 ? w : 0;
+}
+
+// ===== リアルタイム実働プレビュー =====
+function updateWorkPreview() {
+  const ci = document.getElementById('m-clock-in').value;
+  const co = document.getElementById('m-clock-out').value;
+  const br = parseInt(document.getElementById('m-break').value) || 0;
+  const w = calcWorkMinutes(ci, co, br);
+  const el = document.getElementById('work-preview');
+  if (w !== null) {
+    document.getElementById('work-preview-text').textContent = fmtMinutes(w);
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+// ===== 出勤表レンダリング =====
+function renderAttendanceTable() {
+  const table = document.getElementById('attendance-table');
+  const year = parseInt(currentYear), month = parseInt(currentMonth);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+  const dayNames = ['日','月','火','水','木','金','土'];
+
+  const allStaff = staffList.map(s => s.name);
+  const staffInData = [...new Set(attendanceData.map(r => r.staff_name))];
+  const merged = [...new Set([...allStaff, ...staffInData])];
+
+  if (!merged.length) {
+    table.innerHTML = '<tr><td class="att-head-cell text-gray-400 py-8" colspan="33">従業員管理タブからスタッフを追加してください</td></tr>';
+    return;
+  }
+
+  const recordMap = {};
+  attendanceData.forEach(r => {
+    if (!recordMap[r.work_date]) recordMap[r.work_date] = {};
+    recordMap[r.work_date][r.staff_name] = r;
+  });
+
+  // ヘッダー（日付・曜日）
+  let html = '<thead><tr>';
+  html += '<th class="att-name-cell att-head-cell" style="min-width:80px;position:sticky;left:0;z-index:2;background:#fdf2f8">スタッフ</th>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const dow = new Date(ds).getDay();
+    const isToday = ds === today;
+    const col = dow === 0 ? '#fef2f2' : dow === 6 ? '#eff6ff' : isToday ? '#fff7ed' : '#fdf2f8';
+    const tc  = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : '#374151';
+    html += \`<th class="att-head-cell" style="min-width:72px;background:\${col};color:\${tc}">
+      <div style="font-size:13px;font-weight:700">\${d}</div>
+      <div style="font-size:10px">\${dayNames[dow]}</div>
+    </th>\`;
+  }
+  html += '</tr></thead><tbody>';
+
+  // スタッフ行
+  merged.forEach(name => {
+    html += \`<tr><td class="att-name-cell">\${name}</td>\`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const rec = recordMap[ds]?.[name];
+      const dow = new Date(ds).getDay();
+      const isToday = ds === today;
+      let bg = isToday ? '#fff7ed' : (dow === 0 || dow === 6 ? '#f9fafb' : '#ffffff');
+
+      if (rec && rec.status) {
+        const inT  = rec.clock_in  ? rec.clock_in.substring(0,5)  : '';
+        const outT = rec.clock_out ? rec.clock_out.substring(0,5) : '';
+        const wm   = rec.work_minutes ? fmtMinutes(rec.work_minutes) : '';
+        let statusBg = '';
+        if (rec.status === 'present' || rec.status === 'late') statusBg = '#f0fdf4';
+        if (rec.status === 'absent')   statusBg = '#fef2f2';
+        if (rec.status === 'half_day') statusBg = '#eff6ff';
+        if (rec.status === 'holiday')  statusBg = '#f3f4f6';
+        html += \`<td class="att-cell" style="background:\${isToday?'#fff7ed':statusBg}" 
+          onclick="openModal('\${name}','\${ds}')" title="クリックして編集">
+          <div style="text-align:center">
+            <span style="font-size:11px;font-weight:700;padding:1px 5px;border-radius:4px" class="\${statusClass(rec.status)}">\${statusLabel(rec.status)}</span>
+          </div>
+          \${inT  ? '<div class="time-text" style="margin-top:2px">🕐 ' + inT  + '</div>' : ''}
+          \${outT ? '<div class="time-text">🕕 ' + outT + '</div>' : ''}
+          \${wm   ? '<div class="time-text" style="color:#ec4899;font-weight:600">⏱ ' + wm + '</div>' : ''}
+        </td>\`;
+      } else {
+        html += \`<td class="att-cell" style="background:\${bg};color:#d1d5db;font-size:18px;text-align:center;vertical-align:middle"
+          onclick="openModal('\${name}','\${ds}')" title="クリックして入力">+</td>\`;
+      }
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ===== 記録一覧レンダリング =====
+function renderRecordList() {
+  const tbody = document.getElementById('record-list');
+  if (!attendanceData.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="table-cell text-center text-gray-400 py-6">記録がありません</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...attendanceData].reverse().map(r => \`
+    <tr class="hover:bg-gray-50">
+      <td class="table-cell">\${r.work_date}</td>
+      <td class="table-cell font-medium">\${r.staff_name}</td>
+      <td class="table-cell"><span class="px-2 py-0.5 rounded text-xs \${statusClass(r.status)}">\${statusLabel(r.status)}</span></td>
+      <td class="table-cell">\${r.clock_in ? r.clock_in.substring(0,5) : '-'}</td>
+      <td class="table-cell">\${r.clock_out ? r.clock_out.substring(0,5) : '-'}</td>
+      <td class="table-cell">\${r.break_minutes || 0}分</td>
+      <td class="table-cell font-semibold text-pink-600">\${fmtMinutes(r.work_minutes)}</td>
+      <td class="table-cell text-left max-w-xs truncate">\${r.notes || ''}</td>
+      <td class="table-cell">
+        <button onclick="openModal('\${r.staff_name}','\${r.work_date}')"
+          class="text-blue-500 hover:text-blue-700 mr-2 text-xs"><i class="fas fa-edit"></i></button>
+        <button onclick="deleteRecord(\${r.id})"
+          class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  \`).join('');
+}
+
+// ===== 月次集計レンダリング =====
+async function renderSummary() {
+  const year = document.getElementById('yearSel').value;
+  const month = document.getElementById('monthSel').value;
+  const res = await fetch(\`/api/attendance/summary?year=\${year}&month=\${month}\`);
+  const data = await res.json();
+  const tbody = document.getElementById('summary-body');
+  const empty = document.getElementById('summary-empty');
+  if (!data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  tbody.innerHTML = data.map(r => \`
+    <tr class="hover:bg-gray-50">
+      <td class="table-cell font-bold">\${r.staff_name}</td>
+      <td class="table-cell text-green-700 font-semibold">\${r.present_days || 0} 日</td>
+      <td class="table-cell text-red-600">\${r.absent_days || 0} 日</td>
+      <td class="table-cell text-yellow-700">\${r.late_days || 0} 日</td>
+      <td class="table-cell text-blue-700">\${r.half_days || 0} 日</td>
+      <td class="table-cell font-bold text-pink-600">\${fmtMinutes(r.total_work_minutes)}</td>
+    </tr>
+  \`).join('');
+}
+
+// ===== 従業員リストレンダリング =====
+function renderStaffList() {
+  const el = document.getElementById('staff-list-panel');
+  if (!staffList.length) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">従業員が登録されていません</p>';
+    return;
+  }
+  el.innerHTML = staffList.map(s => \`
+    <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200">
+      <div class="flex items-center gap-3">
+        <span class="text-xl">👤</span>
+        <div>
+          <div class="font-semibold text-gray-800">\${s.name}</div>
+          <div class="text-xs text-gray-400">表示順: \${s.display_order}</div>
+        </div>
+      </div>
+      <button onclick="deleteStaff(\${s.id}, '\${s.name}')"
+        class="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 text-sm transition">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  \`).join('');
+}
+
+// ===== モーダルを開く =====
+function openModal(staffName, date) {
+  const rec = attendanceData.find(r => r.staff_name === staffName && r.work_date === date);
+  modalContext = { staffName, date, recordId: rec?.id || null };
+
+  // ヘッダー設定
+  document.getElementById('modal-subtitle').textContent = staffName;
+  const d = new Date(date + 'T00:00:00');
+  const dayNames = ['日','月','火','水','木','金','土'];
+  document.getElementById('modal-title').textContent =
+    \`\${date} (\${dayNames[d.getDay()]})\`;
+
+  // 値セット
+  document.getElementById('m-status').value    = rec?.status      || 'present';
+  document.getElementById('m-clock-in').value  = rec?.clock_in    ? rec.clock_in.substring(0,5)  : '';
+  document.getElementById('m-clock-out').value = rec?.clock_out   ? rec.clock_out.substring(0,5) : '';
+  document.getElementById('m-break').value     = rec?.break_minutes ?? 60;
+  document.getElementById('m-notes').value     = rec?.notes       || '';
+
+  // 削除ボタン表示制御
+  document.getElementById('modal-delete-btn').classList.toggle('hidden', !rec?.id);
+  document.getElementById('modal-msg').classList.add('hidden');
+
+  updateWorkPreview();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('m-clock-in').focus();
+}
+
+// ===== モーダルを閉じる =====
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+// オーバーレイクリックで閉じる
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ===== モーダルから保存 =====
+async function saveModal() {
+  const { staffName, date } = modalContext;
+  const status   = document.getElementById('m-status').value;
+  const clockIn  = document.getElementById('m-clock-in').value  || null;
+  const clockOut = document.getElementById('m-clock-out').value || null;
+  const breakMin = parseInt(document.getElementById('m-break').value) || 0;
+  const notes    = document.getElementById('m-notes').value;
+
+  const body = { staff_name: staffName, work_date: date, status, clock_in: clockIn, clock_out: clockOut, break_minutes: breakMin, notes };
+  const res = await fetch('/api/attendance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (res.ok) {
+    closeModal();
+    await loadAll();
+  } else {
+    showModalMsg('保存に失敗しました', 'error');
+  }
+}
+
+// ===== モーダルから削除 =====
+async function deleteModal() {
+  if (!modalContext.recordId) return;
+  if (!confirm('この記録を削除しますか？')) return;
+  await fetch(\`/api/attendance/\${modalContext.recordId}\`, { method: 'DELETE' });
+  closeModal();
+  await loadAll();
+}
+
+// ===== 記録削除（一覧から） =====
+async function deleteRecord(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  await fetch(\`/api/attendance/\${id}\`, { method: 'DELETE' });
+  await loadAll();
+}
+
+// ===== 従業員追加 =====
+async function addStaff() {
+  const name = document.getElementById('new-staff-name').value.trim();
+  const order = parseInt(document.getElementById('new-staff-order').value) || 10;
+  if (!name) {
+    showStaffMsg('名前を入力してください', 'error');
+    return;
+  }
+  if (staffList.some(s => s.name === name)) {
+    showStaffMsg('同じ名前の従業員が既に存在します', 'error');
+    return;
+  }
+  const res = await fetch('/api/attendance/staff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, display_order: order })
+  });
+  if (res.ok) {
+    document.getElementById('new-staff-name').value = '';
+    showStaffMsg(\`「\${name}」を追加しました\`, 'success');
+    await loadStaff();
+    renderAttendanceTable();
+  } else {
+    showStaffMsg('追加に失敗しました', 'error');
+  }
+}
+
+// ===== 従業員削除 =====
+async function deleteStaff(id, name) {
+  if (!confirm(\`「\${name}」を削除しますか？\\n過去の出勤記録は保持されます。\`)) return;
+  const res = await fetch(\`/api/attendance/staff/\${id}\`, { method: 'DELETE' });
+  if (res.ok) {
+    showStaffMsg(\`「\${name}」を削除しました\`, 'success');
+    await loadStaff();
+    renderAttendanceTable();
+  }
+}
+
+// ===== メッセージ表示 =====
+function showModalMsg(text, type) {
+  const el = document.getElementById('modal-msg');
+  el.textContent = text;
+  el.className = 'mt-2 text-sm px-3 py-1.5 rounded ' + (type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+  el.classList.remove('hidden');
+}
+function showStaffMsg(text, type) {
+  const el = document.getElementById('staff-add-msg');
+  el.textContent = text;
+  el.className = 'mt-3 text-sm px-3 py-1.5 rounded ' + (type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+// Escキーでモーダルを閉じる
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+
 </body>
 </html>`);
 });
