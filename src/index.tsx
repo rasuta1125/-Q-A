@@ -1895,7 +1895,7 @@ app.get('/instagram', (c) => {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
             
-            .container {
+            .insta-container {
                 max-width: 900px;
                 margin: 0 auto;
                 padding: 40px 20px;
@@ -2045,7 +2045,7 @@ app.get('/instagram', (c) => {
             }
             
             @media (max-width: 768px) {
-                .container {
+                .insta-container {
                     padding: 20px 15px;
                 }
                 
@@ -2118,7 +2118,7 @@ app.get('/instagram', (c) => {
             });
         </script>
         
-        <div class="container pt-20">
+        <div class="insta-container pt-20">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #FF69B4;">
@@ -2264,7 +2264,7 @@ app.get('/blog', (c) => {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
             
-            .container {
+            .blog-container {
                 max-width: 1000px;
                 margin: 0 auto;
                 padding: 40px 20px;
@@ -2390,7 +2390,7 @@ app.get('/blog', (c) => {
             }
             
             @media (max-width: 768px) {
-                .container {
+                .blog-container {
                     padding: 20px 15px;
                 }
             }
@@ -2483,7 +2483,7 @@ app.get('/blog', (c) => {
             window.addEventListener('resize', updateNav);
         </script>
         
-        <div class="container pt-20">
+        <div class="blog-container pt-20">
             <!-- ヘッダー -->
             <div class="text-center mb-12">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4" style="color: #3b82f6;">
