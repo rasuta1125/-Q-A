@@ -23,7 +23,7 @@ function buildNav(activePage: string): string {
     { href: '/blog',       icon: 'fas fa-blog',           label: 'ブログ' },
     { href: '/staff-board',icon: 'fas fa-clipboard-list', label: '連絡板' },
     { href: '/attendance', icon: 'fas fa-user-clock',     label: '出勤管理' },
-    { href: '/dashboard',  icon: 'fas fa-chart-bar',      label: 'ダッシュボード' },
+
   ];
   const desktopLinks = links.map(l => {
     const active = l.href === activePage;
@@ -2188,99 +2188,6 @@ app.post('/webhook/line', async (c) => {
     console.error('LINE Webhook error:', error);
     return c.json({ error: 'Webhook processing failed' }, 500);
   }
-});
-
-// =====================================
-// カレンダーAPI（Google Calendar API直接アクセス）
-// =====================================
-app.get('/api/calendar', async (c) => {
-  try {
-    const CLIENT_ID     = c.env.GOOGLE_CLIENT_ID;
-    const CLIENT_SECRET = c.env.GOOGLE_CLIENT_SECRET;
-    const REFRESH_TOKEN = c.env.GOOGLE_REFRESH_TOKEN;
-    if (!CLIENT_ID || !CLIENT_SECRET || !REFRESH_TOKEN) {
-      return c.json({ error: 'Google OAuth credentials not configured' }, 500);
-    }
-
-    // アクセストークン取得
-    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id:     CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        refresh_token: REFRESH_TOKEN,
-        grant_type:    'refresh_token',
-      }),
-    });
-    const tokenData: any = await tokenRes.json();
-    if (!tokenData.access_token) {
-      return c.json({ error: 'Failed to get access token', detail: tokenData }, 500);
-    }
-    const accessToken = tokenData.access_token;
-
-    // クエリパラメータ取得
-    const calendarId = c.req.query('calendarId') || '';
-    const timeMin    = c.req.query('timeMin') || new Date().toISOString();
-    const timeMax    = c.req.query('timeMax') || '';
-
-    // Google Calendar API呼び出し
-    const params = new URLSearchParams({
-      singleEvents: 'true',
-      orderBy:      'startTime',
-      maxResults:   '2500',
-      timeMin,
-      ...(timeMax ? { timeMax } : {}),
-    });
-    const calRes = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    const calData: any = await calRes.json();
-    if (calData.error) {
-      return c.json({ error: calData.error.message || 'Calendar API error', detail: calData.error }, 500);
-    }
-
-    // dashboardが使いやすい形式に変換
-    const events = (calData.items || []).map((e: any) => ({
-      id:          e.id,
-      summary:     e.summary || '',
-      description: e.description || '',
-      created:     e.created,
-      start:       e.start,
-      end:         e.end,
-    }));
-    return c.json({ events });
-  } catch (error: any) {
-    console.error('Calendar API error:', error);
-    return c.json({ error: error.message || 'Calendar API error' }, 500);
-  }
-});
-
-// =====================================
-// ダッシュボードページ
-// =====================================
-app.get('/dashboard', (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>売上ダッシュボード - マカロニスタジオ</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff}
-    #dashboard-root{padding-top:64px}
-  </style>
-</head>
-<body>
-  ${buildNav('/dashboard')}
-  <div id="dashboard-root"></div>
-  <script src="/static/dashboard.bundle.js"></script>
-</body>
-</html>`);
 });
 
 /**
