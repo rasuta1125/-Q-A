@@ -2831,11 +2831,13 @@ async function addStaff() {
   });
   if (res.ok) {
     document.getElementById('new-staff-name').value = '';
+    document.getElementById('new-staff-order').value = '10';
     showStaffMsg(\`「\${name}」を追加しました\`, 'success');
     await loadStaff();
     renderAttendanceTable();
   } else {
-    showStaffMsg('追加に失敗しました', 'error');
+    const errData = await res.json().catch(() => ({}));
+    showStaffMsg(errData.error || '追加に失敗しました', 'error');
   }
 }
 
