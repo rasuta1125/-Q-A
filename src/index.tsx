@@ -940,33 +940,15 @@ app.get('/', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500 font-semibold">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/attendance" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-user-clock mr-2"></i>出勤管理
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
+                        <a href="/" class="text-pink-500 font-bold"><i class="fas fa-home mr-1"></i>回答生成</a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-file-alt mr-1"></i>定型文</a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-1"></i>Q&A管理</a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-1"></i>Web管理</a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -979,34 +961,17 @@ app.get('/', (c) => {
             <!-- モバイルメニュー -->
             <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
                 <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-user-clock mr-2"></i>出勤管理
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
+            </div>
             </div>
         </nav>
         <script>
@@ -1188,33 +1153,15 @@ app.get('/admin', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/attendance" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-user-clock mr-2"></i>出勤管理
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-pink-500 font-semibold">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
+                        <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-1"></i>回答生成</a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-file-alt mr-1"></i>定型文</a>
+                        <a href="/admin" class="text-pink-500 font-bold"><i class="fas fa-cog mr-1"></i>Q&A管理</a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-1"></i>Web管理</a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -1227,34 +1174,17 @@ app.get('/admin', (c) => {
             <!-- モバイルメニュー -->
             <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
                 <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-user-clock mr-2"></i>出勤管理
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
+            </div>
             </div>
         </nav>
         <script>
@@ -1675,33 +1605,15 @@ app.get('/web-admin', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/attendance" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-user-clock mr-2"></i>出勤管理
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-pink-500 font-semibold">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
+                        <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-1"></i>回答生成</a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-file-alt mr-1"></i>定型文</a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-1"></i>Q&A管理</a>
+                        <a href="/web-admin" class="text-pink-500 font-bold"><i class="fas fa-globe mr-1"></i>Web管理</a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -1714,34 +1626,17 @@ app.get('/web-admin', (c) => {
             <!-- モバイルメニュー -->
             <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
                 <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-user-clock mr-2"></i>出勤管理
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
+            </div>
             </div>
         </nav>
         <script>
@@ -1822,24 +1717,15 @@ app.get('/templates', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-500">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/templates" class="text-pink-500 font-semibold">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
+                        <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-1"></i>回答生成</a>
+                        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+                        <a href="/templates" class="text-pink-500 font-bold"><i class="fas fa-file-alt mr-1"></i>定型文</a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-1"></i>Q&A管理</a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-1"></i>Web管理</a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -1852,25 +1738,17 @@ app.get('/templates', (c) => {
             <!-- モバイルメニュー -->
             <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
                 <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
+            </div>
             </div>
         </nav>
         <script>
@@ -2192,33 +2070,15 @@ app.get('/instagram', (c) => {
                     </div>
                     <!-- デスクトップメニュー -->
                     <div class="hidden md:flex items-center space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-home mr-2"></i>回答生成
-                        </a>
-                        <a href="/instagram" class="text-pink-500 font-semibold">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/attendance" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-user-clock mr-2"></i>出勤管理
-                        </a>
-                        <a href="/templates" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-clipboard-list mr-2"></i>定型文
-                        </a>
-                        <a href="/admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-cog mr-2"></i>Q&A管理
-                        </a>
-                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-globe mr-2"></i>Web管理
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
+                        <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-1"></i>回答生成</a>
+                        <a href="/instagram" class="text-pink-500 font-bold"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
+                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
+                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
+                        <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-file-alt mr-1"></i>定型文</a>
+                        <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-1"></i>Q&A管理</a>
+                        <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-1"></i>Web管理</a>
+                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
                     </div>
                     <!-- モバイルメニューボタン -->
                     <div class="md:hidden flex items-center">
@@ -2231,34 +2091,17 @@ app.get('/instagram', (c) => {
             <!-- モバイルメニュー -->
             <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
                 <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-home mr-2"></i>回答生成
-                    </a>
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base font-semibold text-pink-500 bg-pink-50">
-                        <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                    </a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-blog mr-2"></i>ブログ原稿
-                    </a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                    </a>
-                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-user-clock mr-2"></i>出勤管理
-                    </a>
-                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-clipboard-list mr-2"></i>定型文
-                    </a>
-                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-cog mr-2"></i>Q&A管理
-                    </a>
-                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-globe mr-2"></i>Web管理
-                    </a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50">
-                        <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                    </a>
+                    <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                    <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                    <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                    <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
                 </div>
+            </div>
             </div>
         </nav>
         <script>
@@ -2966,15 +2809,18 @@ app.get('/staff-board', (c) => {
                 </div>
                 
                 <!-- モバイルメニュー -->
-                <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
-                    <a href="/" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-comments mr-2"></i>回答生成</a>
-                    <a href="/templates" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-file-alt mr-2"></i>定型文</a>
-                    <a href="/instagram" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fab fa-instagram mr-2"></i>Instagram投稿</a>
-                    <a href="/blog" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-blog mr-2"></i>ブログ原稿</a>
-                    <a href="/staff-board" class="block py-2 text-pink-500 font-semibold"><i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板</a>
-                    <a href="/admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
-                    <a href="/web-admin" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-globe mr-2"></i>Web管理</a>
-                    <a href="/dashboard" class="block py-2 text-gray-700 hover:text-pink-400"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+                <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+                    <div class="px-2 pt-2 pb-3 space-y-1">
+                        <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+                        <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+                        <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+                        <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+                        <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+                        <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+                        <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+                        <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+                        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+                    </div>
                 </div>
             </nav>
         </header>
@@ -4316,6 +4162,7 @@ app.get('/dashboard', (c) => {
     <a href="/instagram">Instagram投稿</a>
     <a href="/blog">ブログ原稿</a>
     <a href="/staff-board">スタッフ連絡板</a>
+    <a href="/attendance">出勤管理</a>
     <a href="/templates">定型文</a>
     <a href="/admin">Q&A管理</a>
     <a href="/web-admin">Web管理</a>
@@ -4382,12 +4229,15 @@ app.get('/attendance', (c) => {
         <i class="fas fa-camera text-pink-500 text-xl mr-2"></i>
         <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
       </div>
-      <div class="hidden md:flex items-center space-x-4 text-sm">
+      <div class="hidden md:flex items-center space-x-4">
         <a href="/" class="text-gray-700 hover:text-pink-500"><i class="fas fa-home mr-1"></i>回答生成</a>
+        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
+        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
         <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
         <a href="/attendance" class="text-pink-500 font-bold"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
         <a href="/templates" class="text-gray-700 hover:text-pink-500"><i class="fas fa-file-alt mr-1"></i>定型文</a>
         <a href="/admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-cog mr-1"></i>Q&A管理</a>
+        <a href="/web-admin" class="text-gray-700 hover:text-pink-500"><i class="fas fa-globe mr-1"></i>Web管理</a>
         <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
       </div>
       <div class="md:hidden flex items-center">
@@ -4396,14 +4246,18 @@ app.get('/attendance', (c) => {
     </div>
   </div>
   <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-    <div class="px-2 pt-2 pb-3 space-y-1">
-      <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
-      <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
-      <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
-      <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
-      <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
-      <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
-    </div>
+      <div class="px-2 pt-2 pb-3 space-y-1">
+          <a href="/" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-home mr-2"></i>回答生成</a>
+          <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
+          <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
+          <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
+          <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
+          <a href="/templates" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-file-alt mr-2"></i>定型文</a>
+          <a href="/admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-cog mr-2"></i>Q&A管理</a>
+          <a href="/web-admin" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-globe mr-2"></i>Web管理</a>
+          <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
+      </div>
+  </div>
   </div>
 </nav>
 <script>
