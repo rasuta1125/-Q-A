@@ -16,6 +16,59 @@ app.use('/static/*', serveStatic({ root: './public' }));
 // ルートへのアクセスは /instagram にリダイレクト
 app.get('/', (c) => c.redirect('/instagram', 301));
 
+// ===== 共通ナビゲーション =====
+function buildNav(activePage: string): string {
+  const links = [
+    { href: '/instagram',  icon: 'fab fa-instagram',      label: 'Instagram' },
+    { href: '/blog',       icon: 'fas fa-blog',           label: 'ブログ' },
+    { href: '/staff-board',icon: 'fas fa-clipboard-list', label: '連絡板' },
+    { href: '/attendance', icon: 'fas fa-user-clock',     label: '出勤管理' },
+    { href: '/dashboard',  icon: 'fas fa-chart-bar',      label: 'ダッシュボード' },
+  ];
+  const desktopLinks = links.map(l => {
+    const active = l.href === activePage;
+    const cls = active ? 'text-pink-500 font-bold' : 'text-gray-700 hover:text-pink-500';
+    return `<a href="${l.href}" class="${cls}"><i class="${l.icon} mr-1"></i>${l.label}</a>`;
+  }).join('\n        ');
+  const mobileLinks = links.map(l => {
+    const active = l.href === activePage;
+    const cls = active
+      ? 'block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50'
+      : 'block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50';
+    return `<a href="${l.href}" class="${cls}"><i class="${l.icon} mr-2"></i>${l.label}</a>`;
+  }).join('\n        ');
+
+  return `
+<nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between h-16">
+      <div class="flex items-center">
+        <i class="fas fa-camera text-pink-500 text-xl mr-2"></i>
+        <span class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ</span>
+      </div>
+      <div class="hidden md:flex items-center space-x-4">
+        ${desktopLinks}
+      </div>
+      <div class="md:hidden flex items-center">
+        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
+    <div class="px-2 pt-2 pb-3 space-y-1">
+      ${mobileLinks}
+    </div>
+  </div>
+</nav>
+<script>
+  document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+    document.getElementById('mobileMenu').classList.toggle('hidden');
+  });
+</script>`
+}
+
 /**
  * スタッフ一覧取得
  */
@@ -358,55 +411,7 @@ app.get('/instagram', (c) => {
         </style>
     </head>
     <body>
-        <!-- ナビゲーションバー -->
-        <nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <i class="fas fa-camera text-pink-500 text-xl sm:text-2xl mr-2 sm:mr-3"></i>
-                        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ</h1>
-                    </div>
-                    <!-- デスクトップメニュー -->
-                    <div class="hidden md:flex items-center space-x-4">
-                        <a href="/instagram" class="text-pink-500 font-bold"><i class="fab fa-instagram mr-1"></i>Instagram</a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
-                        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
-                        <a href="/attendance" class="text-gray-700 hover:text-pink-500"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
-                    </div>
-                    <!-- モバイルメニューボタン -->
-                    <div class="md:hidden flex items-center">
-                        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500">
-                            <i class="fas fa-bars text-2xl"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-                <div class="px-2 pt-2 pb-3 space-y-1">
-                    <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
-                    <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
-                    <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
-                    <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
-                    <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
-                </div>
-            </div>
-            </div>
-        </nav>
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-                if (mobileMenuBtn) {
-                    mobileMenuBtn.addEventListener('click', () => {
-                        const menu = document.getElementById('mobileMenu');
-                        if (menu) {
-                            menu.classList.toggle('hidden');
-                        }
-                    });
-                }
-            });
-        </script>
+        ${buildNav('/instagram')}
         
         <div class="insta-container pt-20">
             <!-- ヘッダー -->
@@ -687,73 +692,7 @@ app.get('/blog', (c) => {
         </style>
     </head>
     <body>
-        <!-- ナビゲーションバー -->
-        <nav style="background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 1px solid #e5e7eb;">
-            <div style="max-width: 1280px; margin: 0 auto; padding: 0 1rem;">
-                <div style="display: flex; justify-content: space-between; height: 4rem; align-items: center;">
-                    <div style="display: flex; align-items: center;">
-                        <i class="fas fa-camera" style="color: #ec4899; font-size: 1.5rem; margin-right: 0.75rem;"></i>
-                        <h1 style="font-size: 1.25rem; font-weight: bold; color: #111827;">マカロニスタジオ</h1>
-                    </div>
-                    <!-- デスクトップメニュー -->
-                    <div id="desktopNav" style="display: none; align-items: center; gap: 1rem;">
-                        <a href="/instagram" style="color: #374151; text-decoration: none;">
-                            <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" style="color: #3b82f6; text-decoration: none; font-weight: 600;">
-                            <i class="fas fa-blog" style="margin-right: 0.5rem;"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" style="color: #374151; text-decoration: none;">
-                            <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>スタッフ連絡板
-                        </a>
-                        <a href="/dashboard" style="color: #374151; text-decoration: none;">
-                            <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>ダッシュボード
-                        </a>
-                    </div>
-                    <!-- モバイルメニューボタン -->
-                    <div id="mobileNavBtn" style="display: none;">
-                        <button onclick="toggleMobileMenu()" style="color: #374151; background: none; border: none; cursor: pointer;">
-                            <i class="fas fa-bars" style="font-size: 1.5rem;"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileNavMenu" style="display: none; border-top: 1px solid #e5e7eb; padding: 0.5rem;">
-                <a href="/instagram" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
-                    <i class="fab fa-instagram" style="margin-right: 0.5rem;"></i>Instagram投稿
-                </a>
-                <a href="/blog" style="display: block; padding: 0.75rem 1rem; color: #3b82f6; text-decoration: none; font-weight: 600; background: #dbeafe; border-radius: 0.375rem;">
-                    <i class="fas fa-blog" style="margin-right: 0.5rem;"></i>ブログ原稿
-                </a>
-                <a href="/staff-board" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
-                    <i class="fas fa-clipboard-list" style="margin-right: 0.5rem;"></i>スタッフ連絡板
-                </a>
-                <a href="/dashboard" style="display: block; padding: 0.75rem 1rem; color: #374151; text-decoration: none;">
-                    <i class="fas fa-chart-bar" style="margin-right: 0.5rem;"></i>ダッシュボード
-                </a>
-            </div>
-        </nav>
-        <script>
-            function updateNav() {
-                const desktopNav = document.getElementById('desktopNav');
-                const mobileNavBtn = document.getElementById('mobileNavBtn');
-                if (window.innerWidth >= 768) {
-                    desktopNav.style.display = 'flex';
-                    mobileNavBtn.style.display = 'none';
-                    document.getElementById('mobileNavMenu').style.display = 'none';
-                } else {
-                    desktopNav.style.display = 'none';
-                    mobileNavBtn.style.display = 'block';
-                }
-            }
-            function toggleMobileMenu() {
-                const menu = document.getElementById('mobileNavMenu');
-                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-            }
-            updateNav();
-            window.addEventListener('resize', updateNav);
-        </script>
+        ${buildNav('/blog')}
         
         <div class="blog-container pt-20">
             <!-- ヘッダー -->
@@ -1037,49 +976,7 @@ app.get('/staff-board', (c) => {
         </style>
     </head>
     <body class="bg-gray-50">
-        <!-- ヘッダー -->
-        <header class="bg-white shadow-sm sticky top-0 z-50">
-            <nav class="container mx-auto px-4 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-camera text-3xl" style="color: #FF69B4;"></i>
-                        <h1 class="text-2xl font-bold" style="color: #FF69B4;">マカロニスタジオ</h1>
-                    </div>
-                    
-                    <!-- デスクトップメニュー -->
-                    <div class="hidden md:flex space-x-6">
-                        <a href="/instagram" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fab fa-instagram mr-2"></i>Instagram投稿
-                        </a>
-                        <a href="/blog" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fas fa-blog mr-2"></i>ブログ原稿
-                        </a>
-                        <a href="/staff-board" class="text-pink-500 font-semibold flex items-center">
-                            <i class="fas fa-clipboard-list mr-2"></i>スタッフ連絡板
-                        </a>
-                        <a href="/dashboard" class="text-gray-700 hover:text-pink-400 transition flex items-center">
-                            <i class="fas fa-chart-bar mr-2"></i>ダッシュボード
-                        </a>
-                    </div>
-                    
-                    <!-- モバイルメニューボタン -->
-                    <button id="mobileMenuBtn" class="md:hidden text-gray-700">
-                        <i class="fas fa-bars text-2xl"></i>
-                    </button>
-                </div>
-                
-                <!-- モバイルメニュー -->
-                <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-                    <div class="px-2 pt-2 pb-3 space-y-1">
-                        <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
-                        <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
-                        <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
-                        <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
-                        <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
-                    </div>
-                </div>
-            </nav>
-        </header>
+        ${buildNav('/staff-board')}
 
         <!-- メインコンテンツ -->
         <div class="container mx-auto px-4 py-8 max-w-5xl">
@@ -1243,12 +1140,6 @@ app.get('/staff-board', (c) => {
         <script src="/static/staff-board.js"></script>
         
         <script>
-            // モバイルメニュートグル
-            document.getElementById('mobileMenuBtn').addEventListener('click', function() {
-                const menu = document.getElementById('mobileMenu');
-                menu.classList.toggle('hidden');
-            });
-            
             // 日付フィールドに今日の日付を設定
             document.getElementById('messageDate').valueAsDate = new Date();
         </script>
@@ -2376,52 +2267,16 @@ app.get('/dashboard', (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>売上ダッシュボード - マカロニスタジオ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff}
     #dashboard-root{padding-top:64px}
-    .db-nav{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.1);border-bottom:1px solid #e5e7eb;position:fixed;top:0;left:0;right:0;z-index:50;height:64px;display:flex;align-items:center;padding:0 24px}
-    .db-nav-inner{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:1280px;margin:0 auto}
-    .db-nav-logo{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;color:#111;text-decoration:none}
-    .db-nav-links{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-    .db-nav-links a{color:#374151;text-decoration:none;font-size:13px;white-space:nowrap}
-    .db-nav-links a:hover,.db-nav-links a.active{color:#ec4899}
-    .db-nav-links a.active{font-weight:600}
-    .db-menu-btn{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:#374151;padding:4px}
-    .db-mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;z-index:49;padding:8px;box-shadow:0 4px 6px rgba(0,0,0,.05)}
-    .db-mobile-menu a{display:block;padding:10px 12px;color:#374151;text-decoration:none;font-size:15px;border-radius:6px}
-    .db-mobile-menu a:hover{background:#f9fafb}
-    .db-mobile-menu a.active{color:#ec4899;font-weight:600;background:#fdf2f8}
-    @media(max-width:768px){.db-nav-links{display:none}.db-menu-btn{display:block}}
   </style>
 </head>
 <body>
-  <nav class="db-nav">
-    <div class="db-nav-inner">
-      <a class="db-nav-logo" href="/instagram">&#128247; マカロニスタジオ</a>
-      <div class="db-nav-links">
-        <a href="/instagram">Instagram投稿</a>
-        <a href="/blog">ブログ原稿</a>
-        <a href="/staff-board">スタッフ連絡板</a>
-        <a href="/attendance">出勤管理</a>
-        <a href="/dashboard" class="active">ダッシュボード</a>
-      </div>
-      <button class="db-menu-btn" id="mobileMenuBtn">&#9776;</button>
-    </div>
-  </nav>
-  <div class="db-mobile-menu" id="mobileMenu">
-    <a href="/instagram">Instagram投稿</a>
-    <a href="/blog">ブログ原稿</a>
-    <a href="/staff-board">スタッフ連絡板</a>
-    <a href="/attendance">出勤管理</a>
-    <a href="/dashboard" class="active">ダッシュボード</a>
-  </div>
-  <script>
-    document.getElementById('mobileMenuBtn').addEventListener('click',function(){
-      var m=document.getElementById('mobileMenu');
-      m.style.display=m.style.display==='block'?'none':'block';
-    });
-  </script>
+  ${buildNav('/dashboard')}
   <div id="dashboard-root"></div>
   <script src="/static/dashboard.bundle.js"></script>
 </body>
@@ -2469,42 +2324,7 @@ app.get('/attendance', (c) => {
 </head>
 <body class="bg-gray-50">
 
-<!-- ナビゲーション -->
-<nav class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between h-16">
-      <div class="flex items-center">
-        <i class="fas fa-camera text-pink-500 text-xl mr-2"></i>
-        <h1 class="text-base sm:text-xl font-bold text-gray-900">マカロニスタジオ Q&A</h1>
-      </div>
-      <div class="hidden md:flex items-center space-x-4">
-        <a href="/instagram" class="text-gray-700 hover:text-pink-500"><i class="fab fa-instagram mr-1"></i>Instagram</a>
-        <a href="/blog" class="text-gray-700 hover:text-pink-500"><i class="fas fa-blog mr-1"></i>ブログ</a>
-        <a href="/staff-board" class="text-gray-700 hover:text-pink-500"><i class="fas fa-clipboard-list mr-1"></i>連絡板</a>
-        <a href="/attendance" class="text-pink-500 font-bold"><i class="fas fa-user-clock mr-1"></i>出勤管理</a>
-        <a href="/dashboard" class="text-gray-700 hover:text-pink-500"><i class="fas fa-chart-bar mr-1"></i>ダッシュボード</a>
-      </div>
-      <div class="md:hidden flex items-center">
-        <button id="mobileMenuBtn" class="text-gray-700 hover:text-pink-500"><i class="fas fa-bars text-2xl"></i></button>
-      </div>
-    </div>
-  </div>
-  <div id="mobileMenu" class="hidden md:hidden border-t border-gray-200">
-      <div class="px-2 pt-2 pb-3 space-y-1">
-          <a href="/instagram" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fab fa-instagram mr-2"></i>Instagram</a>
-          <a href="/blog" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-blog mr-2"></i>ブログ</a>
-          <a href="/staff-board" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-clipboard-list mr-2"></i>連絡板</a>
-          <a href="/attendance" class="block px-3 py-2 rounded-md text-base text-pink-500 font-bold bg-pink-50"><i class="fas fa-user-clock mr-2"></i>出勤管理</a>
-          <a href="/dashboard" class="block px-3 py-2 rounded-md text-base text-gray-700 hover:bg-gray-50"><i class="fas fa-chart-bar mr-2"></i>ダッシュボード</a>
-      </div>
-  </div>
-  </div>
-</nav>
-<script>
-  document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-    document.getElementById('mobileMenu').classList.toggle('hidden');
-  });
-</script>
+${buildNav('/attendance')}
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
 
