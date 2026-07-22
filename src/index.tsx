@@ -4350,9 +4350,26 @@ app.get('/attendance', (c) => {
     .status-absent   { background:#fee2e2; color:#991b1b; }
     .status-late     { background:#fef9c3; color:#854d0e; }
     .status-half_day { background:#dbeafe; color:#1e40af; }
-    .table-cell { padding:6px 8px; border:1px solid #e5e7eb; text-align:center; font-size:13px; }
-    .table-head { background:#fdf2f8; font-weight:600; font-size:12px; position:sticky; top:0; }
+    .status-holiday  { background:#f3f4f6; color:#6b7280; }
+    .table-cell { padding:5px 6px; border:1px solid #e5e7eb; text-align:center; font-size:12px; }
+    .table-head { background:#fdf2f8; font-weight:600; font-size:11px; }
     .today-col { background:#fff7ed !important; }
+    /* モーダル */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px; }
+    .modal-box { background:#fff;border-radius:12px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden; }
+    .modal-header { background:linear-gradient(135deg,#ec4899,#f97316);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center; }
+    .modal-body { padding:18px; }
+    .form-label { display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px; }
+    .form-input { width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:14px;outline:none;transition:.2s; }
+    .form-input:focus { border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,.12); }
+    /* 出勤表セル */
+    .att-cell { min-width:72px;padding:4px;border:1px solid #e5e7eb;cursor:pointer;transition:.15s;vertical-align:top; }
+    .att-cell:hover { background:#fdf2f8; }
+    .att-cell.today { background:#fff7ed; }
+    .att-cell.weekend { background:#f9fafb; }
+    .att-cell .time-text { font-size:10px;color:#6b7280;line-height:1.3; }
+    .att-name-cell { min-width:72px;background:#f9fafb;font-weight:600;font-size:13px;padding:8px 6px;border:1px solid #e5e7eb;white-space:nowrap;position:sticky;left:0;z-index:1; }
+    .att-head-cell { background:#fdf2f8;font-size:11px;font-weight:700;padding:6px 4px;border:1px solid #e5e7eb;text-align:center; }
   </style>
 </head>
 <body class="bg-gray-50">
@@ -4397,104 +4414,73 @@ app.get('/attendance', (c) => {
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
 
-  <!-- ヘッダー -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+  <!-- ヘッダー＆タブ -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
     <div>
       <h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-clock text-pink-500 mr-2"></i>出勤管理</h2>
-      <p class="text-sm text-gray-500 mt-1">スタッフの出退勤を記録・管理します</p>
+      <p class="text-sm text-gray-500 mt-0.5">セルをクリックして直接入力できます</p>
     </div>
-    <div class="flex gap-2">
-      <button onclick="showTab('record')" id="tab-record"
-        class="px-4 py-2 rounded-lg font-semibold text-sm bg-pink-500 text-white">
-        <i class="fas fa-plus mr-1"></i>出退勤入力
-      </button>
+    <div class="flex flex-wrap gap-2">
       <button onclick="showTab('table')" id="tab-table"
-        class="px-4 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
+        class="px-3 py-2 rounded-lg font-semibold text-sm bg-pink-500 text-white">
         <i class="fas fa-table mr-1"></i>出勤表
       </button>
+      <button onclick="showTab('record')" id="tab-record"
+        class="px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
+        <i class="fas fa-list mr-1"></i>記録一覧
+      </button>
       <button onclick="showTab('summary')" id="tab-summary"
-        class="px-4 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
+        class="px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
         <i class="fas fa-chart-bar mr-1"></i>月次集計
+      </button>
+      <button onclick="showTab('staff')" id="tab-staff"
+        class="px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
+        <i class="fas fa-users mr-1"></i>従業員管理
       </button>
     </div>
   </div>
 
-  <!-- 月選択 -->
-  <div class="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap items-center gap-3">
+  <!-- 月選択バー -->
+  <div class="bg-white rounded-lg shadow p-3 mb-4 flex flex-wrap items-center gap-3">
     <label class="text-sm font-medium text-gray-700">表示月：</label>
     <select id="yearSel" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-pink-500 focus:border-pink-500"></select>
-    <span class="text-gray-500">年</span>
+    <span class="text-gray-500 text-sm">年</span>
     <select id="monthSel" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-pink-500 focus:border-pink-500">
       <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
       <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
       <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
       <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
     </select>
-    <span class="text-gray-500">月</span>
-    <button onclick="loadAll()" class="bg-pink-500 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-pink-600">
+    <span class="text-gray-500 text-sm">月</span>
+    <button onclick="loadAll()" class="bg-pink-500 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-pink-600 transition">
       <i class="fas fa-sync mr-1"></i>更新
     </button>
+    <div class="ml-auto flex gap-2 text-xs flex-wrap">
+      <span class="px-2 py-1 rounded status-present">出勤</span>
+      <span class="px-2 py-1 rounded status-absent">欠勤</span>
+      <span class="px-2 py-1 rounded status-late">遅刻</span>
+      <span class="px-2 py-1 rounded status-half_day">半休</span>
+      <span class="px-2 py-1 rounded status-holiday">休日</span>
+    </div>
   </div>
 
-  <!-- === 出退勤入力タブ === -->
-  <div id="panel-record" class="tab-panel">
-    <div class="bg-white rounded-lg shadow p-5">
-      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-edit text-pink-500 mr-2"></i>出退勤を記録</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">スタッフ名 <span class="text-red-500">*</span></label>
-          <select id="inp-staff" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
-            <option value="">選択してください</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">勤務日 <span class="text-red-500">*</span></label>
-          <input type="date" id="inp-date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
-          <select id="inp-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
-            <option value="present">出勤</option>
-            <option value="absent">欠勤</option>
-            <option value="late">遅刻</option>
-            <option value="half_day">半休</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">出勤時刻</label>
-          <input type="time" id="inp-clock-in" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">退勤時刻</label>
-          <input type="time" id="inp-clock-out" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">休憩時間（分）</label>
-          <input type="number" id="inp-break" min="0" max="480" step="15" value="60"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
-        </div>
+  <!-- ===== 出勤表タブ ===== -->
+  <div id="panel-table" class="tab-panel">
+    <div class="bg-white rounded-lg shadow">
+      <div class="p-4 border-b flex items-center justify-between">
+        <h3 class="font-bold text-gray-800"><i class="fas fa-table text-pink-500 mr-2"></i>出勤表 — セルをクリックして入力</h3>
+        <span class="text-xs text-gray-400"><i class="fas fa-info-circle mr-1"></i>空白セルをクリックで新規入力、記録済みセルは編集</span>
       </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">備考</label>
-        <input type="text" id="inp-notes" placeholder="メモ（任意）"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+      <div class="overflow-x-auto p-2">
+        <table id="attendance-table" class="border-collapse" style="min-width:600px"></table>
       </div>
-      <div class="flex gap-3">
-        <button onclick="saveRecord()" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition">
-          <i class="fas fa-save mr-2"></i>保存する
-        </button>
-        <button onclick="clearForm()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 px-6 rounded-lg text-sm transition">
-          <i class="fas fa-times mr-2"></i>クリア
-        </button>
-      </div>
-      <div id="record-msg" class="mt-3 text-sm font-medium hidden"></div>
     </div>
+  </div>
 
-    <!-- 今月の記録一覧 -->
-    <div class="bg-white rounded-lg shadow mt-4 p-5">
-      <div class="flex justify-between items-center mb-3">
-        <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-list text-pink-500 mr-2"></i>今月の記録</h3>
-      </div>
+  <!-- ===== 記録一覧タブ ===== -->
+  <div id="panel-record" class="tab-panel hidden">
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-list text-pink-500 mr-2"></i>今月の記録一覧</h3>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
@@ -4516,26 +4502,7 @@ app.get('/attendance', (c) => {
     </div>
   </div>
 
-  <!-- === 出勤表タブ === -->
-  <div id="panel-table" class="tab-panel hidden">
-    <div class="bg-white rounded-lg shadow p-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-        <h3 class="text-lg font-bold text-gray-800"><i class="fas fa-table text-pink-500 mr-2"></i>出勤表（月別カレンダー）</h3>
-        <div class="flex gap-2 text-xs flex-wrap">
-          <span class="px-2 py-1 rounded status-present">出勤</span>
-          <span class="px-2 py-1 rounded status-absent">欠勤</span>
-          <span class="px-2 py-1 rounded status-late">遅刻</span>
-          <span class="px-2 py-1 rounded status-half_day">半休</span>
-        </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="border-collapse text-xs" id="attendance-table" style="min-width:600px">
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- === 月次集計タブ === -->
+  <!-- ===== 月次集計タブ ===== -->
   <div id="panel-summary" class="tab-panel hidden">
     <div class="bg-white rounded-lg shadow p-5">
       <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-chart-bar text-pink-500 mr-2"></i>月次集計</h3>
@@ -4555,18 +4522,109 @@ app.get('/attendance', (c) => {
         </table>
       </div>
       <div id="summary-empty" class="text-center text-gray-400 py-8 hidden">
-        <i class="fas fa-inbox text-4xl mb-2"></i><br>データがありません
+        <i class="fas fa-inbox text-4xl mb-2 block"></i>データがありません
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 従業員管理タブ ===== -->
+  <div id="panel-staff" class="tab-panel hidden">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 従業員追加 -->
+      <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-user-plus text-pink-500 mr-2"></i>従業員を追加</h3>
+        <div class="mb-3">
+          <label class="block text-sm font-medium text-gray-700 mb-1">名前 <span class="text-red-500">*</span></label>
+          <input type="text" id="new-staff-name" placeholder="例：田中" maxlength="20"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">表示順（数字が小さいほど先頭）</label>
+          <input type="number" id="new-staff-order" value="10" min="1" max="99"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+        </div>
+        <button onclick="addStaff()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
+          <i class="fas fa-plus mr-2"></i>追加する
+        </button>
+        <div id="staff-add-msg" class="mt-3 text-sm hidden"></div>
+      </div>
+
+      <!-- 従業員一覧 -->
+      <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-users text-pink-500 mr-2"></i>従業員一覧</h3>
+        <div id="staff-list-panel" class="space-y-2"></div>
+        <p class="text-xs text-gray-400 mt-3"><i class="fas fa-info-circle mr-1"></i>削除しても過去の記録は保持されます</p>
       </div>
     </div>
   </div>
 
 </main>
 
+<!-- ===== 出退勤入力モーダル ===== -->
+<div id="modal-overlay" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="text-xs opacity-80 mb-0.5" id="modal-subtitle"></div>
+        <div class="font-bold text-lg" id="modal-title"></div>
+      </div>
+      <button onclick="closeModal()" class="text-white opacity-80 hover:opacity-100 text-xl leading-none">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="form-label">ステータス</label>
+          <select id="m-status" class="form-input">
+            <option value="present">✅ 出勤</option>
+            <option value="absent">❌ 欠勤</option>
+            <option value="late">⚠️ 遅刻</option>
+            <option value="half_day">🔵 半休</option>
+            <option value="holiday">🔘 休日</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">休憩時間（分）</label>
+          <input type="number" id="m-break" min="0" max="480" step="15" value="60" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">出勤時刻</label>
+          <input type="time" id="m-clock-in" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">退勤時刻</label>
+          <input type="time" id="m-clock-out" class="form-input">
+        </div>
+      </div>
+      <!-- 実働時間プレビュー -->
+      <div id="work-preview" class="bg-pink-50 rounded-lg px-3 py-2 text-sm text-pink-700 font-semibold mb-3 hidden">
+        <i class="fas fa-clock mr-1"></i>実働時間：<span id="work-preview-text"></span>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">備考</label>
+        <input type="text" id="m-notes" placeholder="メモ（任意）" maxlength="100" class="form-input">
+      </div>
+      <div class="flex gap-2">
+        <button onclick="saveModal()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
+          <i class="fas fa-save mr-1"></i>保存
+        </button>
+        <button onclick="deleteModal()" id="modal-delete-btn" class="bg-red-100 hover:bg-red-200 text-red-600 font-bold py-2.5 px-4 rounded-lg text-sm transition hidden">
+          <i class="fas fa-trash mr-1"></i>削除
+        </button>
+        <button onclick="closeModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-sm transition">
+          キャンセル
+        </button>
+      </div>
+      <div id="modal-msg" class="mt-2 text-sm hidden"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ===== 状態管理 =====
 let staffList = [];
 let attendanceData = [];
 let currentYear, currentMonth;
+let modalContext = { staffName: '', date: '', recordId: null };
 
 // ===== 初期化 =====
 (function init() {
@@ -4574,80 +4632,165 @@ let currentYear, currentMonth;
   currentYear = now.getFullYear();
   currentMonth = String(now.getMonth() + 1).padStart(2, '0');
 
-  // 年セレクト
   const ySel = document.getElementById('yearSel');
   for (let y = currentYear - 2; y <= currentYear + 1; y++) {
     const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
+    opt.value = y; opt.textContent = y;
     if (y === currentYear) opt.selected = true;
     ySel.appendChild(opt);
   }
   document.getElementById('monthSel').value = currentMonth;
 
-  // 本日の日付をデフォルト設定
-  document.getElementById('inp-date').value = now.toISOString().split('T')[0];
+  // 出勤時刻が変わったらリアルタイム計算
+  ['m-clock-in','m-clock-out','m-break'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateWorkPreview);
+  });
 
   loadStaff().then(() => loadAll());
 })();
 
 // ===== タブ切替 =====
 function showTab(tab) {
-  ['record', 'table', 'summary'].forEach(t => {
+  ['table','record','summary','staff'].forEach(t => {
     document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
     const btn = document.getElementById('tab-' + t);
-    if (t === tab) {
-      btn.className = 'px-4 py-2 rounded-lg font-semibold text-sm bg-pink-500 text-white';
-    } else {
-      btn.className = 'px-4 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50';
-    }
+    btn.className = t === tab
+      ? 'px-3 py-2 rounded-lg font-semibold text-sm bg-pink-500 text-white'
+      : 'px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50';
   });
 }
 
 // ===== スタッフ読み込み =====
 async function loadStaff() {
   const res = await fetch('/api/attendance/staff');
-  staffList = await res.json();
-  const sel = document.getElementById('inp-staff');
-  sel.innerHTML = '<option value="">選択してください</option>';
-  staffList.forEach(s => {
-    if (s.name === '全員') return;
-    const opt = document.createElement('option');
-    opt.value = s.name;
-    opt.textContent = s.name;
-    sel.appendChild(opt);
-  });
+  staffList = (await res.json()).filter(s => s.name !== '全員');
+  renderStaffList();
 }
 
 // ===== データ全読み込み =====
 async function loadAll() {
   const year = document.getElementById('yearSel').value;
   const month = document.getElementById('monthSel').value;
-  currentYear = year;
-  currentMonth = month;
-
+  currentYear = year; currentMonth = month;
   const res = await fetch(\`/api/attendance?year=\${year}&month=\${month}\`);
   attendanceData = await res.json();
-
-  renderRecordList();
   renderAttendanceTable();
+  renderRecordList();
   renderSummary();
 }
 
 // ===== ステータス表示 =====
-function statusLabel(s) {
-  return { present: '出勤', absent: '欠勤', late: '遅刻', half_day: '半休' }[s] || s;
-}
-function statusClass(s) {
-  return 'status-' + (s || 'present');
-}
+const STATUS_LABEL = { present:'出勤', absent:'欠勤', late:'遅刻', half_day:'半休', holiday:'休日' };
+const STATUS_ICON  = { present:'✅', absent:'❌', late:'⚠️', half_day:'🔵', holiday:'🔘' };
+function statusLabel(s){ return STATUS_LABEL[s] || s; }
+function statusClass(s){ return 'status-' + (s || 'present'); }
 
 // ===== 実働時間フォーマット =====
 function fmtMinutes(m) {
   if (!m && m !== 0) return '-';
-  const h = Math.floor(m / 60);
-  const min = m % 60;
+  const h = Math.floor(m / 60), min = m % 60;
   return h + 'h' + (min > 0 ? min + 'm' : '');
+}
+function calcWorkMinutes(inVal, outVal, breakMin) {
+  if (!inVal || !outVal) return null;
+  const [ih, im] = inVal.split(':').map(Number);
+  const [oh, om] = outVal.split(':').map(Number);
+  const w = (oh * 60 + om) - (ih * 60 + im) - (breakMin || 0);
+  return w > 0 ? w : 0;
+}
+
+// ===== リアルタイム実働プレビュー =====
+function updateWorkPreview() {
+  const ci = document.getElementById('m-clock-in').value;
+  const co = document.getElementById('m-clock-out').value;
+  const br = parseInt(document.getElementById('m-break').value) || 0;
+  const w = calcWorkMinutes(ci, co, br);
+  const el = document.getElementById('work-preview');
+  if (w !== null) {
+    document.getElementById('work-preview-text').textContent = fmtMinutes(w);
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+// ===== 出勤表レンダリング =====
+function renderAttendanceTable() {
+  const table = document.getElementById('attendance-table');
+  const year = parseInt(currentYear), month = parseInt(currentMonth);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date().toISOString().split('T')[0];
+  const dayNames = ['日','月','火','水','木','金','土'];
+
+  const allStaff = staffList.map(s => s.name);
+  const staffInData = [...new Set(attendanceData.map(r => r.staff_name))];
+  const merged = [...new Set([...allStaff, ...staffInData])];
+
+  if (!merged.length) {
+    table.innerHTML = '<tr><td class="att-head-cell text-gray-400 py-8" colspan="33">従業員管理タブからスタッフを追加してください</td></tr>';
+    return;
+  }
+
+  const recordMap = {};
+  attendanceData.forEach(r => {
+    if (!recordMap[r.work_date]) recordMap[r.work_date] = {};
+    recordMap[r.work_date][r.staff_name] = r;
+  });
+
+  // ヘッダー（日付・曜日）
+  let html = '<thead><tr>';
+  html += '<th class="att-name-cell att-head-cell" style="min-width:80px;position:sticky;left:0;z-index:2;background:#fdf2f8">スタッフ</th>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const dow = new Date(ds).getDay();
+    const isToday = ds === today;
+    const col = dow === 0 ? '#fef2f2' : dow === 6 ? '#eff6ff' : isToday ? '#fff7ed' : '#fdf2f8';
+    const tc  = dow === 0 ? '#dc2626' : dow === 6 ? '#2563eb' : '#374151';
+    html += \`<th class="att-head-cell" style="min-width:72px;background:\${col};color:\${tc}">
+      <div style="font-size:13px;font-weight:700">\${d}</div>
+      <div style="font-size:10px">\${dayNames[dow]}</div>
+    </th>\`;
+  }
+  html += '</tr></thead><tbody>';
+
+  // スタッフ行
+  merged.forEach(name => {
+    html += \`<tr><td class="att-name-cell">\${name}</td>\`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      const rec = recordMap[ds]?.[name];
+      const dow = new Date(ds).getDay();
+      const isToday = ds === today;
+      let bg = isToday ? '#fff7ed' : (dow === 0 || dow === 6 ? '#f9fafb' : '#ffffff');
+
+      if (rec && rec.status) {
+        const inT  = rec.clock_in  ? rec.clock_in.substring(0,5)  : '';
+        const outT = rec.clock_out ? rec.clock_out.substring(0,5) : '';
+        const wm   = rec.work_minutes ? fmtMinutes(rec.work_minutes) : '';
+        let statusBg = '';
+        if (rec.status === 'present' || rec.status === 'late') statusBg = '#f0fdf4';
+        if (rec.status === 'absent')   statusBg = '#fef2f2';
+        if (rec.status === 'half_day') statusBg = '#eff6ff';
+        if (rec.status === 'holiday')  statusBg = '#f3f4f6';
+        html += \`<td class="att-cell" style="background:\${isToday?'#fff7ed':statusBg}" 
+          onclick="openModal('\${name}','\${ds}')" title="クリックして編集">
+          <div style="text-align:center">
+            <span style="font-size:11px;font-weight:700;padding:1px 5px;border-radius:4px" class="\${statusClass(rec.status)}">\${statusLabel(rec.status)}</span>
+          </div>
+          \${inT  ? '<div class="time-text" style="margin-top:2px">🕐 ' + inT  + '</div>' : ''}
+          \${outT ? '<div class="time-text">🕕 ' + outT + '</div>' : ''}
+          \${wm   ? '<div class="time-text" style="color:#ec4899;font-weight:600">⏱ ' + wm + '</div>' : ''}
+        </td>\`;
+      } else {
+        html += \`<td class="att-cell" style="background:\${bg};color:#d1d5db;font-size:18px;text-align:center;vertical-align:middle"
+          onclick="openModal('\${name}','\${ds}')" title="クリックして入力">+</td>\`;
+      }
+    }
+    html += '</tr>';
+  });
+
+  html += '</tbody>';
+  table.innerHTML = html;
 }
 
 // ===== 記録一覧レンダリング =====
@@ -4662,92 +4805,19 @@ function renderRecordList() {
       <td class="table-cell">\${r.work_date}</td>
       <td class="table-cell font-medium">\${r.staff_name}</td>
       <td class="table-cell"><span class="px-2 py-0.5 rounded text-xs \${statusClass(r.status)}">\${statusLabel(r.status)}</span></td>
-      <td class="table-cell">\${r.clock_in || '-'}</td>
-      <td class="table-cell">\${r.clock_out || '-'}</td>
+      <td class="table-cell">\${r.clock_in ? r.clock_in.substring(0,5) : '-'}</td>
+      <td class="table-cell">\${r.clock_out ? r.clock_out.substring(0,5) : '-'}</td>
       <td class="table-cell">\${r.break_minutes || 0}分</td>
-      <td class="table-cell">\${fmtMinutes(r.work_minutes)}</td>
+      <td class="table-cell font-semibold text-pink-600">\${fmtMinutes(r.work_minutes)}</td>
       <td class="table-cell text-left max-w-xs truncate">\${r.notes || ''}</td>
       <td class="table-cell">
-        <button onclick="editRecord(\${JSON.stringify(r).replace(/"/g,'&quot;')})"
-          class="text-blue-500 hover:text-blue-700 mr-2 text-xs"><i class="fas fa-edit"></i> 編集</button>
+        <button onclick="openModal('\${r.staff_name}','\${r.work_date}')"
+          class="text-blue-500 hover:text-blue-700 mr-2 text-xs"><i class="fas fa-edit"></i></button>
         <button onclick="deleteRecord(\${r.id})"
-          class="text-red-500 hover:text-red-700 text-xs"><i class="fas fa-trash"></i> 削除</button>
+          class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"></i></button>
       </td>
     </tr>
   \`).join('');
-}
-
-// ===== 出勤表レンダリング =====
-function renderAttendanceTable() {
-  const table = document.getElementById('attendance-table');
-  const year = parseInt(currentYear);
-  const month = parseInt(currentMonth);
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const today = new Date().toISOString().split('T')[0];
-  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-
-  // スタッフリスト（記録に含まれるスタッフ）
-  const staffInData = [...new Set(attendanceData.map(r => r.staff_name))];
-  // staffListからも追加
-  const allStaff = staffList.filter(s => s.name !== '全員').map(s => s.name);
-  const merged = [...new Set([...allStaff, ...staffInData])];
-  if (!merged.length) {
-    table.innerHTML = '<tr><td class="table-cell text-center text-gray-400 py-6" colspan="35">スタッフまたは記録がありません</td></tr>';
-    return;
-  }
-
-  // 日付→スタッフ→記録 のマップ
-  const recordMap = {};
-  attendanceData.forEach(r => {
-    if (!recordMap[r.work_date]) recordMap[r.work_date] = {};
-    recordMap[r.work_date][r.staff_name] = r;
-  });
-
-  // ヘッダー行（日付）
-  let headerRow = '<tr><th class="table-cell table-head bg-pink-100" style="min-width:80px">スタッフ</th>';
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const dow = new Date(dateStr).getDay();
-    const isToday = dateStr === today;
-    const dowClass = dow === 0 ? 'text-red-600' : dow === 6 ? 'text-blue-600' : '';
-    const bg = isToday ? 'bg-orange-100' : 'bg-pink-50';
-    headerRow += \`<th class="table-cell table-head \${bg}" style="min-width:52px">
-      <div class="\${dowClass} font-bold">\${d}</div>
-      <div class="text-xs \${dowClass}">\${dayNames[dow]}</div>
-    </th>\`;
-  }
-  headerRow += '</tr>';
-
-  // スタッフ行
-  const staffRows = merged.map(name => {
-    let row = \`<tr><td class="table-cell font-semibold bg-gray-50" style="white-space:nowrap">\${name}</td>\`;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-      const isToday = dateStr === today;
-      const rec = recordMap[dateStr]?.[name];
-      const dow = new Date(dateStr).getDay();
-      let bg = isToday ? 'today-col' : (dow === 0 || dow === 6 ? 'bg-gray-50' : '');
-      if (rec) {
-        const inTime = rec.clock_in ? rec.clock_in.substring(0,5) : '';
-        const outTime = rec.clock_out ? rec.clock_out.substring(0,5) : '';
-        row += \`<td class="table-cell \${bg} cursor-pointer hover:opacity-80" 
-          onclick="editRecordByDate('\${name}','\${dateStr}')"
-          title="\${inTime ? '出勤:' + inTime : ''} \${outTime ? '退勤:' + outTime : ''}">
-          <span class="px-1 py-0.5 rounded text-xs \${statusClass(rec.status)}">
-            \${statusLabel(rec.status)}
-          </span>
-          \${inTime ? '<div class=&quot;text-xs text-gray-500 mt-0.5&quot;>' + inTime + '</div>' : ''}
-        </td>\`;
-      } else {
-        row += \`<td class="table-cell \${bg} cursor-pointer hover:bg-pink-50 text-gray-300"
-          onclick="quickAddRecord('\${name}','\${dateStr}')">＋</td>\`;
-      }
-    }
-    row += '</tr>';
-    return row;
-  }).join('');
-
-  table.innerHTML = headerRow + staffRows;
 }
 
 // ===== 月次集計レンダリング =====
@@ -4756,112 +4826,177 @@ async function renderSummary() {
   const month = document.getElementById('monthSel').value;
   const res = await fetch(\`/api/attendance/summary?year=\${year}&month=\${month}\`);
   const data = await res.json();
-
   const tbody = document.getElementById('summary-body');
   const empty = document.getElementById('summary-empty');
-
-  if (!data.length) {
-    tbody.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
+  if (!data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   tbody.innerHTML = data.map(r => \`
     <tr class="hover:bg-gray-50">
       <td class="table-cell font-bold">\${r.staff_name}</td>
-      <td class="table-cell"><span class="text-green-700 font-semibold">\${r.present_days || 0}</span> 日</td>
-      <td class="table-cell"><span class="text-red-600">\${r.absent_days || 0}</span> 日</td>
-      <td class="table-cell"><span class="text-yellow-700">\${r.late_days || 0}</span> 日</td>
-      <td class="table-cell"><span class="text-blue-700">\${r.half_days || 0}</span> 日</td>
-      <td class="table-cell font-semibold">\${fmtMinutes(r.total_work_minutes)}</td>
+      <td class="table-cell text-green-700 font-semibold">\${r.present_days || 0} 日</td>
+      <td class="table-cell text-red-600">\${r.absent_days || 0} 日</td>
+      <td class="table-cell text-yellow-700">\${r.late_days || 0} 日</td>
+      <td class="table-cell text-blue-700">\${r.half_days || 0} 日</td>
+      <td class="table-cell font-bold text-pink-600">\${fmtMinutes(r.total_work_minutes)}</td>
     </tr>
   \`).join('');
 }
 
-// ===== 記録保存 =====
-async function saveRecord() {
-  const staff = document.getElementById('inp-staff').value;
-  const date = document.getElementById('inp-date').value;
-  const status = document.getElementById('inp-status').value;
-  const clockIn = document.getElementById('inp-clock-in').value;
-  const clockOut = document.getElementById('inp-clock-out').value;
-  const breakMin = parseInt(document.getElementById('inp-break').value) || 0;
-  const notes = document.getElementById('inp-notes').value;
-
-  if (!staff || !date) {
-    showMsg('record-msg', 'スタッフ名と勤務日を入力してください', 'error');
+// ===== 従業員リストレンダリング =====
+function renderStaffList() {
+  const el = document.getElementById('staff-list-panel');
+  if (!staffList.length) {
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">従業員が登録されていません</p>';
     return;
   }
+  el.innerHTML = staffList.map(s => \`
+    <div class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2.5 border border-gray-200">
+      <div class="flex items-center gap-3">
+        <span class="text-xl">👤</span>
+        <div>
+          <div class="font-semibold text-gray-800">\${s.name}</div>
+          <div class="text-xs text-gray-400">表示順: \${s.display_order}</div>
+        </div>
+      </div>
+      <button onclick="deleteStaff(\${s.id}, '\${s.name}')"
+        class="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg p-1.5 text-sm transition">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  \`).join('');
+}
 
-  const body = { staff_name: staff, work_date: date, status, clock_in: clockIn || null, clock_out: clockOut || null, break_minutes: breakMin, notes };
-  const res = await fetch('/api/attendance', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+// ===== モーダルを開く =====
+function openModal(staffName, date) {
+  const rec = attendanceData.find(r => r.staff_name === staffName && r.work_date === date);
+  modalContext = { staffName, date, recordId: rec?.id || null };
 
+  // ヘッダー設定
+  document.getElementById('modal-subtitle').textContent = staffName;
+  const d = new Date(date + 'T00:00:00');
+  const dayNames = ['日','月','火','水','木','金','土'];
+  document.getElementById('modal-title').textContent =
+    \`\${date} (\${dayNames[d.getDay()]})\`;
+
+  // 値セット
+  document.getElementById('m-status').value    = rec?.status      || 'present';
+  document.getElementById('m-clock-in').value  = rec?.clock_in    ? rec.clock_in.substring(0,5)  : '';
+  document.getElementById('m-clock-out').value = rec?.clock_out   ? rec.clock_out.substring(0,5) : '';
+  document.getElementById('m-break').value     = rec?.break_minutes ?? 60;
+  document.getElementById('m-notes').value     = rec?.notes       || '';
+
+  // 削除ボタン表示制御
+  document.getElementById('modal-delete-btn').classList.toggle('hidden', !rec?.id);
+  document.getElementById('modal-msg').classList.add('hidden');
+
+  updateWorkPreview();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  document.getElementById('m-clock-in').focus();
+}
+
+// ===== モーダルを閉じる =====
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+// オーバーレイクリックで閉じる
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ===== モーダルから保存 =====
+async function saveModal() {
+  const { staffName, date } = modalContext;
+  const status   = document.getElementById('m-status').value;
+  const clockIn  = document.getElementById('m-clock-in').value  || null;
+  const clockOut = document.getElementById('m-clock-out').value || null;
+  const breakMin = parseInt(document.getElementById('m-break').value) || 0;
+  const notes    = document.getElementById('m-notes').value;
+
+  const body = { staff_name: staffName, work_date: date, status, clock_in: clockIn, clock_out: clockOut, break_minutes: breakMin, notes };
+  const res = await fetch('/api/attendance', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
   if (res.ok) {
-    showMsg('record-msg', '保存しました！', 'success');
+    closeModal();
     await loadAll();
   } else {
-    showMsg('record-msg', '保存に失敗しました', 'error');
+    showModalMsg('保存に失敗しました', 'error');
   }
 }
 
-// ===== 記録削除 =====
+// ===== モーダルから削除 =====
+async function deleteModal() {
+  if (!modalContext.recordId) return;
+  if (!confirm('この記録を削除しますか？')) return;
+  await fetch(\`/api/attendance/\${modalContext.recordId}\`, { method: 'DELETE' });
+  closeModal();
+  await loadAll();
+}
+
+// ===== 記録削除（一覧から） =====
 async function deleteRecord(id) {
   if (!confirm('この記録を削除しますか？')) return;
   await fetch(\`/api/attendance/\${id}\`, { method: 'DELETE' });
   await loadAll();
 }
 
-// ===== 記録編集 =====
-function editRecord(r) {
-  document.getElementById('inp-staff').value = r.staff_name;
-  document.getElementById('inp-date').value = r.work_date;
-  document.getElementById('inp-status').value = r.status || 'present';
-  document.getElementById('inp-clock-in').value = r.clock_in || '';
-  document.getElementById('inp-clock-out').value = r.clock_out || '';
-  document.getElementById('inp-break').value = r.break_minutes || 60;
-  document.getElementById('inp-notes').value = r.notes || '';
-  showTab('record');
-  window.scrollTo(0, 0);
+// ===== 従業員追加 =====
+async function addStaff() {
+  const name = document.getElementById('new-staff-name').value.trim();
+  const order = parseInt(document.getElementById('new-staff-order').value) || 10;
+  if (!name) {
+    showStaffMsg('名前を入力してください', 'error');
+    return;
+  }
+  if (staffList.some(s => s.name === name)) {
+    showStaffMsg('同じ名前の従業員が既に存在します', 'error');
+    return;
+  }
+  const res = await fetch('/api/attendance/staff', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, display_order: order })
+  });
+  if (res.ok) {
+    document.getElementById('new-staff-name').value = '';
+    showStaffMsg(\`「\${name}」を追加しました\`, 'success');
+    await loadStaff();
+    renderAttendanceTable();
+  } else {
+    showStaffMsg('追加に失敗しました', 'error');
+  }
 }
 
-// ===== カレンダーからの編集 =====
-function editRecordByDate(staffName, date) {
-  const rec = attendanceData.find(r => r.staff_name === staffName && r.work_date === date);
-  if (rec) { editRecord(rec); }
-}
-
-// ===== カレンダーから素早く追加 =====
-function quickAddRecord(staffName, date) {
-  document.getElementById('inp-staff').value = staffName;
-  document.getElementById('inp-date').value = date;
-  document.getElementById('inp-status').value = 'present';
-  document.getElementById('inp-clock-in').value = '09:00';
-  document.getElementById('inp-clock-out').value = '18:00';
-  document.getElementById('inp-break').value = 60;
-  document.getElementById('inp-notes').value = '';
-  showTab('record');
-  window.scrollTo(0, 0);
-}
-
-// ===== フォームクリア =====
-function clearForm() {
-  document.getElementById('inp-staff').value = '';
-  document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('inp-status').value = 'present';
-  document.getElementById('inp-clock-in').value = '';
-  document.getElementById('inp-clock-out').value = '';
-  document.getElementById('inp-break').value = 60;
-  document.getElementById('inp-notes').value = '';
+// ===== 従業員削除 =====
+async function deleteStaff(id, name) {
+  if (!confirm(\`「\${name}」を削除しますか？\\n過去の出勤記録は保持されます。\`)) return;
+  const res = await fetch(\`/api/attendance/staff/\${id}\`, { method: 'DELETE' });
+  if (res.ok) {
+    showStaffMsg(\`「\${name}」を削除しました\`, 'success');
+    await loadStaff();
+    renderAttendanceTable();
+  }
 }
 
 // ===== メッセージ表示 =====
-function showMsg(id, text, type) {
-  const el = document.getElementById(id);
+function showModalMsg(text, type) {
+  const el = document.getElementById('modal-msg');
   el.textContent = text;
-  el.className = 'mt-3 text-sm font-medium px-3 py-2 rounded ' + (type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+  el.className = 'mt-2 text-sm px-3 py-1.5 rounded ' + (type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+  el.classList.remove('hidden');
+}
+function showStaffMsg(text, type) {
+  const el = document.getElementById('staff-add-msg');
+  el.textContent = text;
+  el.className = 'mt-3 text-sm px-3 py-1.5 rounded ' + (type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
   el.classList.remove('hidden');
   setTimeout(() => el.classList.add('hidden'), 3000);
 }
+
+// Escキーでモーダルを閉じる
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
 
 </body>
