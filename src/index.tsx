@@ -4414,31 +4414,47 @@ app.get('/attendance', (c) => {
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
 
-  <!-- ヘッダー＆タブ -->
-  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+  <!-- ヘッダー＆タブドロップダウン -->
+  <div class="flex items-center justify-between mb-4 gap-3">
     <div>
       <h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-clock text-pink-500 mr-2"></i>出勤管理</h2>
       <p class="text-sm text-gray-500 mt-0.5">セルをクリックして直接入力できます</p>
     </div>
-    <div class="flex flex-wrap gap-2">
-      <button onclick="showTab('table')" id="tab-table"
-        class="px-3 py-2 rounded-lg font-semibold text-sm bg-pink-500 text-white">
-        <i class="fas fa-table mr-1"></i>出勤表
+    <!-- タブドロップダウン -->
+    <div class="relative" id="tab-dropdown-wrap">
+      <button id="tab-dropdown-btn" onclick="toggleTabMenu()"
+        class="flex items-center gap-2 px-4 py-2.5 bg-pink-500 hover:bg-pink-600 text-white font-semibold text-sm rounded-xl shadow transition select-none">
+        <span id="tab-current-icon"><i class="fas fa-table"></i></span>
+        <span id="tab-current-label">出勤表</span>
+        <i class="fas fa-chevron-down text-xs ml-1 transition-transform duration-200" id="tab-chevron"></i>
       </button>
-      <button onclick="showTab('record')" id="tab-record"
-        class="px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
-        <i class="fas fa-list mr-1"></i>記録一覧
-      </button>
-      <button onclick="showTab('summary')" id="tab-summary"
-        class="px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
-        <i class="fas fa-chart-bar mr-1"></i>月次集計
-      </button>
-      <button onclick="showTab('staff')" id="tab-staff"
-        class="px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">
-        <i class="fas fa-users mr-1"></i>従業員管理
-      </button>
+      <!-- ドロップダウンメニュー -->
+      <div id="tab-menu"
+        class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+        style="animation:fadeDown .15s ease">
+        <button onclick="showTab('table')" data-tab="table"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-table w-4 text-center"></i>出勤表
+        </button>
+        <button onclick="showTab('record')" data-tab="record"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-list w-4 text-center"></i>記録一覧
+        </button>
+        <button onclick="showTab('summary')" data-tab="summary"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-chart-bar w-4 text-center"></i>月次集計
+        </button>
+        <button onclick="showTab('staff')" data-tab="staff"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-users w-4 text-center"></i>従業員管理
+        </button>
+      </div>
     </div>
   </div>
+  <style>
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+    .tab-menu-item.active { background:#fdf2f8; color:#ec4899; font-weight:700; }
+  </style>
 
   <!-- 月選択バー -->
   <div class="bg-white rounded-lg shadow p-3 mb-4 flex flex-wrap items-center gap-3">
@@ -4649,15 +4665,48 @@ let modalContext = { staffName: '', date: '', recordId: null };
   loadStaff().then(() => loadAll());
 })();
 
+// ===== タブ定義 =====
+const TAB_META = {
+  table:   { icon: 'fas fa-table',     label: '出勤表' },
+  record:  { icon: 'fas fa-list',      label: '記録一覧' },
+  summary: { icon: 'fas fa-chart-bar', label: '月次集計' },
+  staff:   { icon: 'fas fa-users',     label: '従業員管理' },
+};
+
+// ===== タブドロップダウン開閉 =====
+function toggleTabMenu() {
+  const menu = document.getElementById('tab-menu');
+  const chevron = document.getElementById('tab-chevron');
+  const isHidden = menu.classList.contains('hidden');
+  menu.classList.toggle('hidden', !isHidden);
+  chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+}
+// 外クリックで閉じる
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('tab-dropdown-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('tab-menu').classList.add('hidden');
+    document.getElementById('tab-chevron').style.transform = '';
+  }
+});
+
 // ===== タブ切替 =====
 function showTab(tab) {
   ['table','record','summary','staff'].forEach(t => {
     document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
-    const btn = document.getElementById('tab-' + t);
-    btn.className = t === tab
-      ? 'px-3 py-2 rounded-lg font-semibold text-sm bg-pink-500 text-white'
-      : 'px-3 py-2 rounded-lg font-semibold text-sm bg-white text-gray-700 border border-gray-300 hover:bg-gray-50';
+    // メニューアイテムのアクティブ表示
+    const item = document.querySelector(\`.tab-menu-item[data-tab="\${t}"]\`);
+    if (item) item.classList.toggle('active', t === tab);
   });
+
+  // ボタンラベル更新
+  const meta = TAB_META[tab];
+  document.getElementById('tab-current-icon').innerHTML = \`<i class="\${meta.icon}"></i>\`;
+  document.getElementById('tab-current-label').textContent = meta.label;
+
+  // メニューを閉じる
+  document.getElementById('tab-menu').classList.add('hidden');
+  document.getElementById('tab-chevron').style.transform = '';
 }
 
 // ===== スタッフ読み込み =====
