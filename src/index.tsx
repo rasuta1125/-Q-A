@@ -13,6 +13,9 @@ app.use('/api/*', cors());
 // 静的ファイル配信
 app.use('/static/*', serveStatic({ root: './public' }));
 
+// ルートへのアクセスは /instagram にリダイレクト
+app.get('/', (c) => c.redirect('/instagram', 301));
+
 /**
  * スタッフ一覧取得
  */
