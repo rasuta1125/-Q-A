@@ -227,6 +227,68 @@ app.get('/api/attendance/summary', async (c) => {
   return c.json(results);
 });
 
+// =====================================
+// シフト希望メモ API
+// =====================================
+
+/** 希望メモ一覧取得（年月指定） */
+app.get('/api/attendance/wishes', async (c) => {
+  const { DB } = c.env;
+  const ym = c.req.query('year_month') || '';
+  if (!ym) return c.json({ error: 'year_month is required' }, 400);
+  try {
+    const { results } = await DB.prepare(
+      'SELECT * FROM shift_wishes WHERE year_month = ? ORDER BY wish_date ASC, staff_name ASC'
+    ).bind(ym).all();
+    return c.json(results);
+  } catch {
+    return c.json([]);
+  }
+});
+
+/** 希望メモ追加・更新（同スタッフ×同日はUPSERT） */
+app.post('/api/attendance/wishes', async (c) => {
+  const { DB } = c.env;
+  try {
+    const { staff_name, year_month, wish_date, wish_type, note } = await c.req.json();
+    if (!staff_name || !year_month || !wish_date) {
+      return c.json({ error: 'staff_name / year_month / wish_date は必須です' }, 400);
+    }
+    const result = await DB.prepare(`
+      INSERT INTO shift_wishes (staff_name, year_month, wish_date, wish_type, note, updated_at)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(staff_name, wish_date) DO UPDATE SET
+        wish_type  = excluded.wish_type,
+        note       = excluded.note,
+        updated_at = CURRENT_TIMESTAMP
+    `).bind(staff_name, year_month, wish_date, wish_type || 'note', note || '').run();
+    return c.json({ id: result.meta.last_row_id, staff_name, wish_date, wish_type, note });
+  } catch (e: any) {
+    // UNIQUE制約がまだない場合はINSERT
+    try {
+      const { staff_name, year_month, wish_date, wish_type, note } = await c.req.json().catch(() => ({})) as any;
+      const result = await DB.prepare(
+        'INSERT INTO shift_wishes (staff_name, year_month, wish_date, wish_type, note) VALUES (?, ?, ?, ?, ?)'
+      ).bind(staff_name, year_month, wish_date, wish_type || 'note', note || '').run();
+      return c.json({ id: result.meta.last_row_id });
+    } catch (e2: any) {
+      return c.json({ error: e2.message }, 500);
+    }
+  }
+});
+
+/** 希望メモ削除 */
+app.delete('/api/attendance/wishes/:id', async (c) => {
+  const { DB } = c.env;
+  const id = parseInt(c.req.param('id'));
+  try {
+    await DB.prepare('DELETE FROM shift_wishes WHERE id = ?').bind(id).run();
+    return c.json({ success: true });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
 /**
  * Instagram投稿文生成ページ
  */
@@ -2269,6 +2331,10 @@ ${buildNav('/attendance')}
           class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
           <i class="fas fa-users w-4 text-center"></i>従業員管理
         </button>
+        <button onclick="showTab('wishes')" data-tab="wishes"
+          class="tab-menu-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-left hover:bg-pink-50 hover:text-pink-600 transition">
+          <i class="fas fa-calendar-heart w-4 text-center"></i>希望メモ
+        </button>
       </div>
     </div>
   </div>
@@ -2395,6 +2461,73 @@ ${buildNav('/attendance')}
     </div>
   </div>
 
+  <!-- ===== 希望メモ パネル ===== -->
+  <div id="panel-wishes" class="tab-panel hidden">
+
+    <!-- 入力フォーム -->
+    <div class="bg-white rounded-lg shadow p-5 mb-4">
+      <h3 class="text-lg font-bold text-gray-800 mb-4">
+        <i class="fas fa-calendar-heart text-pink-500 mr-2"></i>希望メモを追加
+      </h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        <!-- スタッフ選択 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">スタッフ <span class="text-red-500">*</span></label>
+          <select id="wish-staff" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+            <option value="">選択してください</option>
+          </select>
+        </div>
+        <!-- 日付 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">日付 <span class="text-red-500">*</span></label>
+          <input type="date" id="wish-date"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+        </div>
+        <!-- 種別 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">種別</label>
+          <select id="wish-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+            <option value="work">🟢 出勤希望</option>
+            <option value="off">🔴 休み希望</option>
+            <option value="note">📝 メモ</option>
+          </select>
+        </div>
+        <!-- メモ -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">メモ（任意）</label>
+          <input type="text" id="wish-note" placeholder="例：午後から可" maxlength="100"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="saveWish()"
+          class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg text-sm transition">
+          <i class="fas fa-plus mr-1"></i>追加・更新
+        </button>
+        <div id="wish-msg" class="text-sm hidden"></div>
+      </div>
+    </div>
+
+    <!-- 希望一覧 -->
+    <div class="bg-white rounded-lg shadow p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800">
+          <i class="fas fa-list text-pink-500 mr-2"></i>希望一覧
+          <span id="wishes-month-label" class="text-sm font-normal text-gray-500 ml-2"></span>
+        </h3>
+        <div class="flex gap-3 text-xs">
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 font-semibold">🟢 出勤希望</span>
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">🔴 休み希望</span>
+          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-600 font-semibold">📝 メモ</span>
+        </div>
+      </div>
+      <div id="wishes-list" class="space-y-2">
+        <p class="text-sm text-gray-400 text-center py-6"><i class="fas fa-inbox mr-2"></i>希望メモがありません</p>
+      </div>
+    </div>
+
+  </div>
+
 </main>
 
 <!-- ===== 出退勤入力モーダル ===== -->
@@ -2488,10 +2621,11 @@ let modalContext = { staffName: '', date: '', recordId: null };
 
 // ===== タブ定義 =====
 const TAB_META = {
-  table:   { icon: 'fas fa-table',     label: '出勤表' },
-  record:  { icon: 'fas fa-list',      label: '記録一覧' },
-  summary: { icon: 'fas fa-chart-bar', label: '月次集計' },
-  staff:   { icon: 'fas fa-users',     label: '従業員管理' },
+  table:   { icon: 'fas fa-table',          label: '出勤表' },
+  record:  { icon: 'fas fa-list',           label: '記録一覧' },
+  summary: { icon: 'fas fa-chart-bar',      label: '月次集計' },
+  staff:   { icon: 'fas fa-users',          label: '従業員管理' },
+  wishes:  { icon: 'fas fa-calendar-heart', label: '希望メモ' },
 };
 
 // ===== タブドロップダウン開閉 =====
@@ -2513,12 +2647,14 @@ document.addEventListener('click', function(e) {
 
 // ===== タブ切替 =====
 function showTab(tab) {
-  ['table','record','summary','staff'].forEach(t => {
+  ['table','record','summary','staff','wishes'].forEach(t => {
     document.getElementById('panel-' + t).classList.toggle('hidden', t !== tab);
     // メニューアイテムのアクティブ表示
     const item = document.querySelector(\`.tab-menu-item[data-tab="\${t}"]\`);
     if (item) item.classList.toggle('active', t === tab);
   });
+  // 希望メモタブに切り替えたとき一覧を更新
+  if (tab === 'wishes') loadWishes();
 
   // ボタンラベル更新
   const meta = TAB_META[tab];
@@ -2535,6 +2671,7 @@ async function loadStaff() {
   const res = await fetch('/api/attendance/staff');
   staffList = (await res.json()).filter(s => s.name !== '全員');
   renderStaffList();
+  populateWishStaff();
 }
 
 // ===== データ全読み込み =====
@@ -2869,6 +3006,149 @@ function showStaffMsg(text, type) {
 
 // Escキーでモーダルを閉じる
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ===== 希望メモ =====
+let wishesData = [];
+
+/** スタッフセレクタを希望メモフォームに反映 */
+function populateWishStaff() {
+  const sel = document.getElementById('wish-staff');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">選択してください</option>';
+  staffList.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.name; opt.textContent = s.name;
+    if (s.name === prev) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+/** 希望メモ一覧を読み込む */
+async function loadWishes() {
+  const year  = document.getElementById('yearSel').value;
+  const month = document.getElementById('monthSel').value;
+  const ym    = year + '-' + month;
+  document.getElementById('wishes-month-label').textContent = year + '年' + parseInt(month) + '月';
+  populateWishStaff();
+  // 日付デフォルト：現在月の1日
+  const dateSel = document.getElementById('wish-date');
+  if (dateSel && !dateSel.value) dateSel.value = ym + '-01';
+  try {
+    const res = await fetch('/api/attendance/wishes?year_month=' + ym);
+    wishesData = await res.json();
+  } catch { wishesData = []; }
+  renderWishes();
+}
+
+/** WISH_TYPE の表示設定 */
+const WISH_BADGE = {
+  work: { emoji:'🟢', label:'出勤希望', cls:'bg-green-100 text-green-700' },
+  off:  { emoji:'🔴', label:'休み希望', cls:'bg-red-100  text-red-700'   },
+  note: { emoji:'📝', label:'メモ',     cls:'bg-gray-100 text-gray-600'  },
+};
+
+/** 希望メモ一覧を描画（日付グループ） */
+function renderWishes() {
+  const container = document.getElementById('wishes-list');
+  if (!wishesData.length) {
+    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6"><i class="fas fa-inbox mr-2"></i>希望メモがありません</p>';
+    return;
+  }
+
+  // 日付でグループ化
+  const byDate = {};
+  wishesData.forEach(w => {
+    if (!byDate[w.wish_date]) byDate[w.wish_date] = [];
+    byDate[w.wish_date].push(w);
+  });
+
+  const html = Object.keys(byDate).sort().map(date => {
+    const dateObj = new Date(date + 'T00:00:00');
+    const dow = ['日','月','火','水','木','金','土'][dateObj.getDay()];
+    const dowColor = dateObj.getDay() === 0 ? 'text-red-500' : dateObj.getDay() === 6 ? 'text-blue-500' : 'text-gray-500';
+    const rows = byDate[date].map(w => {
+      const b = WISH_BADGE[w.wish_type] || WISH_BADGE.note;
+      const noteText = w.note ? \`<span class="text-xs text-gray-500 ml-2">– \${escHtml(w.note)}</span>\` : '';
+      return \`
+        <div class="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 group">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm font-semibold text-gray-700 min-w-[4em]">\${escHtml(w.staff_name)}</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full \${b.cls}">\${b.emoji} \${b.label}</span>
+            \${noteText}
+          </div>
+          <button onclick="deleteWish(\${w.id})"
+            class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 text-xs px-2 py-0.5 rounded transition">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>\`;
+    }).join('');
+
+    return \`
+      <div class="border border-gray-100 rounded-xl overflow-hidden mb-2">
+        <div class="bg-gray-50 px-4 py-2 flex items-center gap-2">
+          <span class="font-bold text-gray-700 text-sm">\${date.slice(5)} <span class="\${dowColor} font-semibold">(\${dow})</span></span>
+          <span class="text-xs text-gray-400">\${byDate[date].length}件</span>
+        </div>
+        <div class="px-3 py-1 divide-y divide-gray-50">\${rows}</div>
+      </div>\`;
+  }).join('');
+
+  container.innerHTML = html;
+}
+
+/** 希望メモ保存（追加 or 更新） */
+async function saveWish() {
+  const staff_name = document.getElementById('wish-staff').value;
+  const wish_date  = document.getElementById('wish-date').value;
+  const wish_type  = document.getElementById('wish-type').value;
+  const note       = document.getElementById('wish-note').value.trim();
+
+  if (!staff_name || !wish_date) {
+    showWishMsg('スタッフと日付を選択してください', 'error');
+    return;
+  }
+
+  const year  = document.getElementById('yearSel').value;
+  const month = document.getElementById('monthSel').value;
+  const year_month = year + '-' + month;
+
+  const res = await fetch('/api/attendance/wishes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ staff_name, year_month, wish_date, wish_type, note })
+  });
+
+  if (res.ok) {
+    showWishMsg('保存しました ✓', 'success');
+    document.getElementById('wish-note').value = '';
+    await loadWishes();
+  } else {
+    const err = await res.json().catch(() => ({}));
+    showWishMsg(err.error || '保存に失敗しました', 'error');
+  }
+}
+
+/** 希望メモ削除 */
+async function deleteWish(id) {
+  if (!confirm('この希望メモを削除しますか？')) return;
+  const res = await fetch('/api/attendance/wishes/' + id, { method: 'DELETE' });
+  if (res.ok) await loadWishes();
+}
+
+/** 希望メモ用メッセージ表示 */
+function showWishMsg(text, type) {
+  const el = document.getElementById('wish-msg');
+  el.textContent = text;
+  el.className = 'text-sm px-3 py-1.5 rounded ' + (type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+/** XSS対策エスケープ */
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 
 </body>
