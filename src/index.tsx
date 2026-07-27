@@ -96,11 +96,31 @@ app.post('/api/attendance/staff', async (c) => {
   const { name, display_order } = await c.req.json();
   if (!name) return c.json({ error: 'スタッフ名は必須です' }, 400);
 
-  const result = await DB.prepare(
-    'INSERT INTO staff_members (name, display_order) VALUES (?, ?)'
-  ).bind(name, display_order || 99).run();
+  try {
+    // 既存スタッフ確認（論理削除済みなら復活、有効なら409）
+    const existing = await DB.prepare(
+      'SELECT id, is_active FROM staff_members WHERE name = ?'
+    ).bind(name).first() as any;
 
-  return c.json({ id: result.meta.last_row_id, name, display_order: display_order || 99 });
+    if (existing) {
+      if (existing.is_active === 1) {
+        return c.json({ error: `「${name}」は既に登録されています` }, 409);
+      }
+      // 論理削除済み → 復活
+      await DB.prepare(
+        'UPDATE staff_members SET is_active = 1, display_order = ? WHERE id = ?'
+      ).bind(display_order || 99, existing.id).run();
+      return c.json({ id: existing.id, name, display_order: display_order || 99, reactivated: true });
+    }
+
+    const result = await DB.prepare(
+      'INSERT INTO staff_members (name, display_order) VALUES (?, ?)'
+    ).bind(name, display_order || 99).run();
+
+    return c.json({ id: result.meta.last_row_id, name, display_order: display_order || 99 });
+  } catch (e: any) {
+    return c.json({ error: e.message || '追加に失敗しました' }, 500);
+  }
 });
 
 /**
