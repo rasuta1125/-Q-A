@@ -2293,46 +2293,35 @@ app.get('/attendance', (c) => {
     .table-cell { padding:5px 6px; border:1px solid #e5e7eb; text-align:center; font-size:12px; }
     .table-head { background:#fdf2f8; font-weight:600; font-size:11px; }
     .today-col { background:#fff7ed !important; }
-    /* モーダル — スマホ最適化（下からスライド） */
-    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0; }
-    @media(min-width:640px){
-      .modal-overlay { align-items:center;padding:16px; }
-      .modal-box { border-radius:16px !important;max-width:440px !important; }
-    }
-    .modal-box { background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:100%;box-shadow:0 -4px 40px rgba(0,0,0,.2);overflow:hidden; }
-    .modal-header { background:linear-gradient(135deg,#ec4899,#f97316);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center; }
-    .modal-body { padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom)); }
-    .form-label { display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px; }
-    .form-input { width:100%;border:1.5px solid #d1d5db;border-radius:10px;padding:11px 14px;font-size:16px;outline:none;transition:.2s; }
+    /* モーダル */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px; }
+    .modal-box { background:#fff;border-radius:12px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden; }
+    .modal-header { background:linear-gradient(135deg,#ec4899,#f97316);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center; }
+    .modal-body { padding:18px; }
+    .form-label { display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px; }
+    .form-input { width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:14px;outline:none;transition:.2s; }
     .form-input:focus { border-color:#ec4899;box-shadow:0 0 0 3px rgba(236,72,153,.12); }
     /* 出勤表セル */
-    .att-cell { min-width:64px;padding:4px;border:1px solid #e5e7eb;cursor:pointer;transition:.15s;vertical-align:top; }
+    .att-cell { min-width:72px;padding:4px;border:1px solid #e5e7eb;cursor:pointer;transition:.15s;vertical-align:top; }
     .att-cell:hover { background:#fdf2f8; }
-    .att-cell:active { background:#fce7f3; }
     .att-cell.today { background:#fff7ed; }
     .att-cell.weekend { background:#f9fafb; }
     .att-cell .time-text { font-size:10px;color:#6b7280;line-height:1.3; }
-    .att-name-cell { min-width:64px;background:#f9fafb;font-weight:600;font-size:12px;padding:8px 4px;border:1px solid #e5e7eb;white-space:nowrap;position:sticky;left:0;z-index:1; }
-    .att-head-cell { background:#fdf2f8;font-size:10px;font-weight:700;padding:5px 3px;border:1px solid #e5e7eb;text-align:center; }
-    /* スマホカード（記録一覧・集計） */
-    .record-card { background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:14px;border-left:4px solid #ec4899; }
-    /* セーフエリア対応 */
-    main { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
-    /* タッチ操作しやすいボタン */
-    .touch-btn { min-height:44px; }
+    .att-name-cell { min-width:72px;background:#f9fafb;font-weight:600;font-size:13px;padding:8px 6px;border:1px solid #e5e7eb;white-space:nowrap;position:sticky;left:0;z-index:1; }
+    .att-head-cell { background:#fdf2f8;font-size:11px;font-weight:700;padding:6px 4px;border:1px solid #e5e7eb;text-align:center; }
   </style>
 </head>
 <body class="bg-gray-50">
 
 ${buildNav('/attendance')}
 
-<main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 pt-20">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pt-20">
 
   <!-- ヘッダー＆タブドロップダウン -->
-  <div class="flex items-center justify-between mb-3 gap-2">
+  <div class="flex items-center justify-between mb-4 gap-3">
     <div>
-      <h2 class="text-xl sm:text-2xl font-bold text-gray-900"><i class="fas fa-user-clock text-pink-500 mr-2"></i>出勤管理</h2>
-      <p class="text-xs text-gray-400 mt-0.5 hidden sm:block">セルをクリックして直接入力できます</p>
+      <h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-clock text-pink-500 mr-2"></i>出勤管理</h2>
+      <p class="text-sm text-gray-500 mt-0.5">セルをクリックして直接入力できます</p>
     </div>
     <!-- タブドロップダウン -->
     <div class="relative" id="tab-dropdown-wrap">
@@ -2374,40 +2363,27 @@ ${buildNav('/attendance')}
     .tab-menu-item.active { background:#fdf2f8; color:#ec4899; font-weight:700; }
   </style>
 
-  <!-- 月選択バー（スマホ最適化） -->
-  <div class="bg-white rounded-xl shadow p-3 mb-3">
-    <div class="flex items-center gap-2">
-      <!-- 前月ボタン -->
-      <button onclick="changeMonth(-1)" class="touch-btn flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-pink-50 text-gray-600 hover:text-pink-500 transition flex-shrink-0">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <!-- 年月表示（タップで選択切替） -->
-      <div class="flex-1 flex items-center justify-center gap-1">
-        <select id="yearSel" class="border-0 bg-transparent text-base font-bold text-gray-800 focus:ring-0 focus:outline-none cursor-pointer"></select>
-        <span class="text-gray-500 font-medium">年</span>
-        <select id="monthSel" class="border-0 bg-transparent text-base font-bold text-gray-800 focus:ring-0 focus:outline-none cursor-pointer">
-          <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
-          <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
-          <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
-          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
-        </select>
-      </div>
-      <!-- 次月ボタン -->
-      <button onclick="changeMonth(1)" class="touch-btn flex items-center justify-center w-10 h-10 rounded-lg bg-gray-100 hover:bg-pink-50 text-gray-600 hover:text-pink-500 transition flex-shrink-0">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-      <!-- 更新ボタン -->
-      <button onclick="loadAll()" class="touch-btn flex items-center justify-center w-10 h-10 rounded-lg bg-pink-500 hover:bg-pink-600 text-white transition flex-shrink-0">
-        <i class="fas fa-sync text-sm"></i>
-      </button>
-    </div>
-    <!-- ステータス凡例（小さく） -->
-    <div class="flex gap-1.5 mt-2 flex-wrap justify-center">
-      <span class="px-2 py-0.5 rounded text-xs status-present">出勤</span>
-      <span class="px-2 py-0.5 rounded text-xs status-absent">欠勤</span>
-      <span class="px-2 py-0.5 rounded text-xs status-late">遅刻</span>
-      <span class="px-2 py-0.5 rounded text-xs status-half_day">半休</span>
-      <span class="px-2 py-0.5 rounded text-xs status-holiday">休日</span>
+  <!-- 月選択バー -->
+  <div class="bg-white rounded-lg shadow p-3 mb-4 flex flex-wrap items-center gap-3">
+    <label class="text-sm font-medium text-gray-700">表示月：</label>
+    <select id="yearSel" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-pink-500 focus:border-pink-500"></select>
+    <span class="text-gray-500 text-sm">年</span>
+    <select id="monthSel" class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-pink-500 focus:border-pink-500">
+      <option value="01">1月</option><option value="02">2月</option><option value="03">3月</option>
+      <option value="04">4月</option><option value="05">5月</option><option value="06">6月</option>
+      <option value="07">7月</option><option value="08">8月</option><option value="09">9月</option>
+      <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+    </select>
+    <span class="text-gray-500 text-sm">月</span>
+    <button onclick="loadAll()" class="bg-pink-500 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-pink-600 transition">
+      <i class="fas fa-sync mr-1"></i>更新
+    </button>
+    <div class="ml-auto flex gap-2 text-xs flex-wrap">
+      <span class="px-2 py-1 rounded status-present">出勤</span>
+      <span class="px-2 py-1 rounded status-absent">欠勤</span>
+      <span class="px-2 py-1 rounded status-late">遅刻</span>
+      <span class="px-2 py-1 rounded status-half_day">半休</span>
+      <span class="px-2 py-1 rounded status-holiday">休日</span>
     </div>
   </div>
 
@@ -2426,12 +2402,9 @@ ${buildNav('/attendance')}
 
   <!-- ===== 記録一覧タブ ===== -->
   <div id="panel-record" class="tab-panel hidden">
-    <div class="bg-white rounded-xl shadow p-4">
-      <h3 class="text-base font-bold text-gray-800 mb-3"><i class="fas fa-list text-pink-500 mr-2"></i>今月の記録一覧</h3>
-      <!-- スマホ: カード列 -->
-      <div id="record-list-mobile" class="space-y-2 sm:hidden"></div>
-      <!-- PC: テーブル -->
-      <div class="hidden sm:block overflow-x-auto">
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-list text-pink-500 mr-2"></i>今月の記録一覧</h3>
+      <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-pink-50">
@@ -2454,12 +2427,9 @@ ${buildNav('/attendance')}
 
   <!-- ===== 月次集計タブ ===== -->
   <div id="panel-summary" class="tab-panel hidden">
-    <div class="bg-white rounded-xl shadow p-4">
-      <h3 class="text-base font-bold text-gray-800 mb-3"><i class="fas fa-chart-bar text-pink-500 mr-2"></i>月次集計</h3>
-      <!-- スマホ: カード列 -->
-      <div id="summary-cards" class="space-y-2 sm:hidden"></div>
-      <!-- PC: テーブル -->
-      <div class="hidden sm:block overflow-x-auto">
+    <div class="bg-white rounded-lg shadow p-5">
+      <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fas fa-chart-bar text-pink-500 mr-2"></i>月次集計</h3>
+      <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-pink-50">
@@ -2519,39 +2489,39 @@ ${buildNav('/attendance')}
       <h3 class="text-lg font-bold text-gray-800 mb-4">
         <i class="fas fa-calendar-heart text-pink-500 mr-2"></i>希望メモを追加
       </h3>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
         <!-- スタッフ選択 -->
-        <div class="col-span-1">
-          <label class="block text-xs font-medium text-gray-600 mb-1">スタッフ <span class="text-red-500">*</span></label>
-          <select id="wish-staff" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-pink-500 focus:border-pink-500">
-            <option value="">選択</option>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">スタッフ <span class="text-red-500">*</span></label>
+          <select id="wish-staff" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
+            <option value="">選択してください</option>
           </select>
         </div>
         <!-- 日付 -->
-        <div class="col-span-1">
-          <label class="block text-xs font-medium text-gray-600 mb-1">日付 <span class="text-red-500">*</span></label>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">日付 <span class="text-red-500">*</span></label>
           <input type="date" id="wish-date"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-pink-500 focus:border-pink-500">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
         </div>
         <!-- 種別 -->
-        <div class="col-span-1">
-          <label class="block text-xs font-medium text-gray-600 mb-1">種別</label>
-          <select id="wish-type" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-pink-500 focus:border-pink-500">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">種別</label>
+          <select id="wish-type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
             <option value="work">🟢 出勤希望</option>
             <option value="off">🔴 休み希望</option>
             <option value="note">📝 メモ</option>
           </select>
         </div>
         <!-- メモ -->
-        <div class="col-span-1">
-          <label class="block text-xs font-medium text-gray-600 mb-1">メモ（任意）</label>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">メモ（任意）</label>
           <input type="text" id="wish-note" placeholder="例：午後から可" maxlength="100"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-pink-500 focus:border-pink-500">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-pink-500 focus:border-pink-500">
         </div>
       </div>
       <div class="flex items-center gap-3">
         <button onclick="saveWish()"
-          class="touch-btn flex-1 sm:flex-none bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 px-6 rounded-xl text-sm transition">
+          class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-6 rounded-lg text-sm transition">
           <i class="fas fa-plus mr-1"></i>追加・更新
         </button>
         <div id="wish-msg" class="text-sm hidden"></div>
@@ -2624,14 +2594,14 @@ ${buildNav('/attendance')}
         <input type="text" id="m-notes" placeholder="メモ（任意）" maxlength="100" class="form-input">
       </div>
       <div class="flex gap-2">
-        <button onclick="saveModal()" class="touch-btn flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-xl text-sm transition">
+        <button onclick="saveModal()" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 rounded-lg text-sm transition">
           <i class="fas fa-save mr-1"></i>保存
         </button>
-        <button onclick="deleteModal()" id="modal-delete-btn" class="touch-btn bg-red-100 hover:bg-red-200 text-red-600 font-bold py-3 px-4 rounded-xl text-sm transition hidden">
+        <button onclick="deleteModal()" id="modal-delete-btn" class="bg-red-100 hover:bg-red-200 text-red-600 font-bold py-2.5 px-4 rounded-lg text-sm transition hidden">
           <i class="fas fa-trash mr-1"></i>削除
         </button>
-        <button onclick="closeModal()" class="touch-btn bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 px-4 rounded-xl text-sm transition">
-          ✕
+        <button onclick="closeModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg text-sm transition">
+          キャンセル
         </button>
       </div>
       <div id="modal-msg" class="mt-2 text-sm hidden"></div>
@@ -2724,19 +2694,6 @@ async function loadStaff() {
   populateWishStaff();
 }
 
-// ===== 月移動（← →ボタン） =====
-function changeMonth(delta) {
-  const ySel = document.getElementById('yearSel');
-  const mSel = document.getElementById('monthSel');
-  let y = parseInt(ySel.value);
-  let m = parseInt(mSel.value) + delta;
-  if (m < 1)  { m = 12; y--; }
-  if (m > 12) { m = 1;  y++; }
-  ySel.value = y;
-  mSel.value = String(m).padStart(2, '0');
-  loadAll();
-}
-
 // ===== データ全読み込み =====
 async function loadAll() {
   const year = document.getElementById('yearSel').value;
@@ -2797,7 +2754,7 @@ function renderAttendanceTable() {
   const merged = [...new Set([...allStaff, ...staffInData])];
 
   if (!merged.length) {
-    table.innerHTML = '<tr><td class="att-head-cell text-gray-400 py-8" colspan="33">従業員管理タブからスタッフを追加してください<\/td><\/tr>';
+    table.innerHTML = '<tr><td class="att-head-cell text-gray-400 py-8" colspan="33">従業員管理タブからスタッフを追加してください</td></tr>';
     return;
   }
 
@@ -2809,7 +2766,7 @@ function renderAttendanceTable() {
 
   // ヘッダー（日付・曜日）
   let html = '<thead><tr>';
-  html += '<th class="att-name-cell att-head-cell" style="min-width:80px;position:sticky;left:0;z-index:2;background:#fdf2f8">スタッフ<\/th>';
+  html += '<th class="att-name-cell att-head-cell" style="min-width:80px;position:sticky;left:0;z-index:2;background:#fdf2f8">スタッフ</th>';
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = year + '-' + String(month).padStart(2,'0') + '-' + String(d).padStart(2,'0');
     const dow = new Date(ds).getDay();
@@ -2821,7 +2778,7 @@ function renderAttendanceTable() {
       <div style="font-size:10px">\${dayNames[dow]}</div>
     </th>\`;
   }
-  html += '<\/tr><\/thead><tbody>';
+  html += '</tr></thead><tbody>';
 
   // スタッフ行
   merged.forEach(name => {
@@ -2847,77 +2804,47 @@ function renderAttendanceTable() {
           <div style="text-align:center">
             <span style="font-size:11px;font-weight:700;padding:1px 5px;border-radius:4px" class="\${statusClass(rec.status)}">\${statusLabel(rec.status)}</span>
           </div>
-          \${inT  ? '<div class="time-text" style="margin-top:2px">🕐 ' + inT  + '<\/div>' : ''}
-          \${outT ? '<div class="time-text">🕕 ' + outT + '<\/div>' : ''}
-          \${wm   ? '<div class="time-text" style="color:#ec4899;font-weight:600">⏱ ' + wm + '<\/div>' : ''}
+          \${inT  ? '<div class="time-text" style="margin-top:2px">🕐 ' + inT  + '</div>' : ''}
+          \${outT ? '<div class="time-text">🕕 ' + outT + '</div>' : ''}
+          \${wm   ? '<div class="time-text" style="color:#ec4899;font-weight:600">⏱ ' + wm + '</div>' : ''}
         </td>\`;
       } else {
         html += \`<td class="att-cell" style="background:\${bg};color:#d1d5db;font-size:18px;text-align:center;vertical-align:middle"
           onclick="openModal('\${name}','\${ds}')" title="クリックして入力">+</td>\`;
       }
     }
-    html += '<\/tr>';
+    html += '</tr>';
   });
 
-  html += '<\/tbody>';
+  html += '</tbody>';
   table.innerHTML = html;
 }
 
 // ===== 記録一覧レンダリング =====
 function renderRecordList() {
-  const reversed = [...attendanceData].reverse();
-
-  // PC用テーブル
   const tbody = document.getElementById('record-list');
-  if (!reversed.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="table-cell text-center text-gray-400 py-6">記録がありません<\/td><\/tr>';
-  } else {
-    tbody.innerHTML = reversed.map(r => {
-      const editBtn = '<button onclick="openModal(\'' + r.staff_name + '\',\'' + r.work_date + '\')" class="text-blue-500 hover:text-blue-700 mr-2 text-xs"><i class="fas fa-edit"><\/i><\/button>';
-      const delBtn  = '<button onclick="deleteRecord(' + r.id + ')" class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"><\/i><\/button>';
-      return '<tr class="hover:bg-gray-50">'
-        + '<td class="table-cell">' + r.work_date + '<\/td>'
-        + '<td class="table-cell font-medium">' + r.staff_name + '<\/td>'
-        + '<td class="table-cell"><span class="px-2 py-0.5 rounded text-xs ' + statusClass(r.status) + '">' + statusLabel(r.status) + '<\/span><\/td>'
-        + '<td class="table-cell">' + (r.clock_in ? r.clock_in.substring(0,5) : '-') + '<\/td>'
-        + '<td class="table-cell">' + (r.clock_out ? r.clock_out.substring(0,5) : '-') + '<\/td>'
-        + '<td class="table-cell">' + (r.break_minutes || 0) + '分<\/td>'
-        + '<td class="table-cell font-semibold text-pink-600">' + fmtMinutes(r.work_minutes) + '<\/td>'
-        + '<td class="table-cell text-left max-w-xs truncate">' + (r.notes || '') + '<\/td>'
-        + '<td class="table-cell">' + editBtn + delBtn + '<\/td>'
-        + '<\/tr>';
-    }).join('');
-  }
-
-  // スマホ用カード
-  const mobileEl = document.getElementById('record-list-mobile');
-  if (!mobileEl) return;
-  if (!reversed.length) {
-    mobileEl.innerHTML = '<p class="text-center text-gray-400 py-6 text-sm">記録がありません<\/p>';
+  if (!attendanceData.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="table-cell text-center text-gray-400 py-6">記録がありません</td></tr>';
     return;
   }
-  mobileEl.innerHTML = reversed.map(r => {
-    const noteHtml = r.notes ? '<span class="text-gray-400">' + r.notes + '<\/span>' : '';
-    return '<div class="record-card">'
-      + '<div class="flex items-center justify-between mb-2">'
-      +   '<div class="flex items-center gap-2">'
-      +     '<span class="font-bold text-gray-800">' + r.staff_name + '<\/span>'
-      +     '<span class="px-2 py-0.5 rounded-full text-xs ' + statusClass(r.status) + '">' + statusLabel(r.status) + '<\/span>'
-      +   '<\/div>'
-      +   '<div class="flex items-center gap-1">'
-      +     '<span class="text-xs text-gray-400 mr-1">' + r.work_date.slice(5) + '<\/span>'
-      +     '<button onclick="openModal(\'' + r.staff_name + '\',\'' + r.work_date + '\')" class="text-blue-400 hover:text-blue-600 p-1.5 touch-btn"><i class="fas fa-edit text-sm"><\/i><\/button>'
-      +     '<button onclick="deleteRecord(' + r.id + ')" class="text-red-300 hover:text-red-500 p-1.5 touch-btn"><i class="fas fa-trash text-sm"><\/i><\/button>'
-      +   '<\/div>'
-      + '<\/div>'
-      + '<div class="flex gap-3 text-xs text-gray-600 flex-wrap">'
-      +   '<span><i class="fas fa-sign-in-alt text-green-400 mr-1"><\/i>' + (r.clock_in ? r.clock_in.substring(0,5) : '-') + '<\/span>'
-      +   '<span><i class="fas fa-sign-out-alt text-red-400 mr-1"><\/i>' + (r.clock_out ? r.clock_out.substring(0,5) : '-') + '<\/span>'
-      +   '<span><i class="fas fa-clock text-pink-400 mr-1"><\/i>' + fmtMinutes(r.work_minutes) + '<\/span>'
-      +   noteHtml
-      + '<\/div>'
-      + '<\/div>';
-  }).join('');
+  tbody.innerHTML = [...attendanceData].reverse().map(r => \`
+    <tr class="hover:bg-gray-50">
+      <td class="table-cell">\${r.work_date}</td>
+      <td class="table-cell font-medium">\${r.staff_name}</td>
+      <td class="table-cell"><span class="px-2 py-0.5 rounded text-xs \${statusClass(r.status)}">\${statusLabel(r.status)}</span></td>
+      <td class="table-cell">\${r.clock_in ? r.clock_in.substring(0,5) : '-'}</td>
+      <td class="table-cell">\${r.clock_out ? r.clock_out.substring(0,5) : '-'}</td>
+      <td class="table-cell">\${r.break_minutes || 0}分</td>
+      <td class="table-cell font-semibold text-pink-600">\${fmtMinutes(r.work_minutes)}</td>
+      <td class="table-cell text-left max-w-xs truncate">\${r.notes || ''}</td>
+      <td class="table-cell">
+        <button onclick="openModal('\${r.staff_name}','\${r.work_date}')"
+          class="text-blue-500 hover:text-blue-700 mr-2 text-xs"><i class="fas fa-edit"></i></button>
+        <button onclick="deleteRecord(\${r.id})"
+          class="text-red-400 hover:text-red-600 text-xs"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>
+  \`).join('');
 }
 
 // ===== 月次集計レンダリング =====
@@ -2928,51 +2855,25 @@ async function renderSummary() {
   const data = await res.json();
   const tbody = document.getElementById('summary-body');
   const empty = document.getElementById('summary-empty');
-  const cards = document.getElementById('summary-cards');
-
-  if (!data.length) {
-    tbody.innerHTML = '';
-    if (cards) cards.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
+  if (!data.length) { tbody.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
-
-  // PC用テーブル
-  tbody.innerHTML = data.map(r =>
-    '<tr class="hover:bg-gray-50">'
-    + '<td class="table-cell font-bold">' + r.staff_name + '<\/td>'
-    + '<td class="table-cell text-green-700 font-semibold">' + (r.present_days || 0) + ' 日<\/td>'
-    + '<td class="table-cell text-red-600">' + (r.absent_days || 0) + ' 日<\/td>'
-    + '<td class="table-cell text-yellow-700">' + (r.late_days || 0) + ' 日<\/td>'
-    + '<td class="table-cell text-blue-700">' + (r.half_days || 0) + ' 日<\/td>'
-    + '<td class="table-cell font-bold text-pink-600">' + fmtMinutes(r.total_work_minutes) + '<\/td>'
-    + '<\/tr>'
-  ).join('');
-
-  // スマホ用カード
-  if (!cards) return;
-  cards.innerHTML = data.map(r =>
-    '<div class="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">'
-    + '<div class="flex items-center justify-between mb-3">'
-    +   '<span class="font-bold text-gray-800">👤 ' + r.staff_name + '<\/span>'
-    +   '<span class="text-base font-bold text-pink-600">' + fmtMinutes(r.total_work_minutes) + '<\/span>'
-    + '<\/div>'
-    + '<div class="grid grid-cols-4 gap-2 text-center text-xs">'
-    +   '<div class="bg-green-50 rounded-lg py-2"><div class="font-bold text-green-700 text-lg">' + (r.present_days || 0) + '<\/div><div class="text-green-600">出勤<\/div><\/div>'
-    +   '<div class="bg-red-50 rounded-lg py-2"><div class="font-bold text-red-600 text-lg">' + (r.absent_days || 0) + '<\/div><div class="text-red-500">欠勤<\/div><\/div>'
-    +   '<div class="bg-yellow-50 rounded-lg py-2"><div class="font-bold text-yellow-700 text-lg">' + (r.late_days || 0) + '<\/div><div class="text-yellow-600">遅刻<\/div><\/div>'
-    +   '<div class="bg-blue-50 rounded-lg py-2"><div class="font-bold text-blue-600 text-lg">' + (r.half_days || 0) + '<\/div><div class="text-blue-500">半休<\/div><\/div>'
-    + '<\/div>'
-    + '<\/div>'
-  ).join('');
+  tbody.innerHTML = data.map(r => \`
+    <tr class="hover:bg-gray-50">
+      <td class="table-cell font-bold">\${r.staff_name}</td>
+      <td class="table-cell text-green-700 font-semibold">\${r.present_days || 0} 日</td>
+      <td class="table-cell text-red-600">\${r.absent_days || 0} 日</td>
+      <td class="table-cell text-yellow-700">\${r.late_days || 0} 日</td>
+      <td class="table-cell text-blue-700">\${r.half_days || 0} 日</td>
+      <td class="table-cell font-bold text-pink-600">\${fmtMinutes(r.total_work_minutes)}</td>
+    </tr>
+  \`).join('');
 }
 
 // ===== 従業員リストレンダリング =====
 function renderStaffList() {
   const el = document.getElementById('staff-list-panel');
   if (!staffList.length) {
-    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">従業員が登録されていません<\/p>';
+    el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">従業員が登録されていません</p>';
     return;
   }
   el.innerHTML = staffList.map(s => \`
@@ -3134,7 +3035,7 @@ function populateWishStaff() {
   const sel = document.getElementById('wish-staff');
   if (!sel) return;
   const prev = sel.value;
-  sel.innerHTML = '<option value="">選択してください<\/option>';
+  sel.innerHTML = '<option value="">選択してください</option>';
   staffList.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.name; opt.textContent = s.name;
@@ -3171,7 +3072,7 @@ const WISH_BADGE = {
 function renderWishes() {
   const container = document.getElementById('wishes-list');
   if (!wishesData.length) {
-    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6"><i class="fas fa-inbox mr-2"><\/i>希望メモがありません<\/p>';
+    container.innerHTML = '<p class="text-sm text-gray-400 text-center py-6"><i class="fas fa-inbox mr-2"></i>希望メモがありません</p>';
     return;
   }
 
